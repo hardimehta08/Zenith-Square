@@ -6,11 +6,11 @@ This guide explains how to set up and run Zenith Square on Windows. It is writte
 
 When you test with a phone and the database is on your laptop:
 
-| Part | Where it runs |
-| --- | --- |
-| Flutter app | Your Android phone |
-| Django API | Your laptop |
-| PostgreSQL database | Your laptop |
+| Part                | Where it runs      |
+| ------------------- | ------------------ |
+| Flutter app         | Your Android phone |
+| Django API          | Your laptop        |
+| PostgreSQL database | Your laptop        |
 
 The phone talks to Django over Wi-Fi. Django talks to PostgreSQL on the laptop. **Do not connect the phone directly to PostgreSQL or open PostgreSQL port `5432` to Wi-Fi.**
 
@@ -49,6 +49,34 @@ If the app is already installed on your phone, you can unplug the USB cable and 
    ```
 
    The `.env` file contains your database password. It is ignored by Git; **do not share it or commit it to the repository**.
+
+### Adding the database data to the database:
+
+## Local Test Database Setup
+
+### 1. Create a fresh local database
+
+```bash
+psql -U postgres -c "CREATE DATABASE society_db;"
+```
+
+### 2. Restore the dump file
+
+Run from the root of the repo (replace `postgres` with your local DB username if needed):
+
+```bash
+pg_restore -U postgres -d society_db --no-owner --role=postgres ./path-to-your-destination/test_data.dump
+```
+
+### 3. Resetting your database later
+
+If you alter data while testing and want a clean reset:
+
+```bash
+psql -U postgres -c "DROP DATABASE IF EXISTS society_db;"
+psql -U postgres -c "CREATE DATABASE society_db;"
+pg_restore -U postgres -d society_db --no-owner --role=postgres ./path-to-your-destination/test_data.dump
+```
 
 ## Part 3: Set up Django
 
@@ -119,6 +147,7 @@ You do this setup when Django and PostgreSQL are on your laptop and the app is o
    ```
 
    Replace `192.168.1.8` with the address you found. Save the file.
+
 5. Stop Django if it is already running (press **Ctrl+C** in its terminal). In the `backend` folder, start it so other devices on your Wi-Fi can reach it:
 
    ```powershell
@@ -126,13 +155,13 @@ You do this setup when Django and PostgreSQL are on your laptop and the app is o
    ```
 
 6. If Windows Firewall asks whether Python can use the network, allow it on **Private networks only**. If the phone still cannot connect, a Windows administrator can add a rule:
-
    - Open Start and search for **Windows Defender Firewall with Advanced Security**.
    - Select **Inbound Rules → New Rule**.
    - Choose **Port**, select **TCP**, and enter `8000` as the local port.
    - Choose **Allow the connection**, select **Private** only, and give the rule a name such as `Zenith Square Django`.
 
    Do not open port `5432`.
+
 7. On the phone, open Chrome and visit `http://192.168.1.8:8000/api/societies/`, replacing the example address with the laptop's address. If the API responds, the phone can reach Django.
 
 ### B. Run or install the Flutter app without a USB cable
@@ -156,6 +185,7 @@ Wireless debugging works on Android 11 and newer. Your phone and laptop must rem
    ```
 
    `flutter devices` lists connected devices. Copy the phone's device ID from that list.
+
 6. Open a new PowerShell terminal at the project root, go to the `frontend` folder, and run the app. Replace `PHONE_DEVICE_ID` with the ID from the previous step, and replace `192.168.1.8` with your laptop's Wi-Fi address:
 
    ```powershell
@@ -225,6 +255,7 @@ The Django development server and the local `http://` address are for testing on
   ```
 
   Restart Django before using the setup again.
+
 - In the virtual-environment terminal, run:
 
   ```powershell
