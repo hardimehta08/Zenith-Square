@@ -255,7 +255,7 @@ class _ChairmanPollsScreenState extends State<ChairmanPollsScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  _buildFieldLabel('Context / Details (Optional)'),
+                  _buildFieldLabel('Context / Details', isRequired: true),
                   const SizedBox(height: 6),
                   TextFormField(
                     controller: descController,
@@ -265,6 +265,14 @@ class _ChairmanPollsScreenState extends State<ChairmanPollsScreen> {
                           'Provide background details or estimated costs...',
                       border: OutlineInputBorder(),
                     ),
+                    validator: (v) {
+                      final val = v?.trim() ?? '';
+                      if (val.isEmpty) return 'Poll description is required';
+                      if (val.length < 5) {
+                        return 'Description must be at least 5 characters';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 14),
 

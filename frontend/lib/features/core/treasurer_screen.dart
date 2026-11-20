@@ -27,9 +27,17 @@ class _TreasurerHomeScreenState extends State<TreasurerHomeScreen> {
       final role = (profile['role_name'] ?? '').toString().toLowerCase();
       if (mounted) {
         if (role == 'chairman') {
-          Navigator.pushNamedAndRemoveUntil(context, '/chairman-home', (route) => false);
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/chairman-home',
+            (route) => false,
+          );
         } else if (role.contains('security') || role.contains('guard')) {
-          Navigator.pushNamedAndRemoveUntil(context, '/security-home', (route) => false);
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/security-home',
+            (route) => false,
+          );
         } else if (role != 'treasurer') {
           Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
         }
@@ -94,13 +102,18 @@ class _TreasurerHomeScreenState extends State<TreasurerHomeScreen> {
               });
             },
             child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 12.0,
+              ),
               children: [
                 // 1. Treasurer Header Card
                 Card(
                   elevation: 0,
                   color: const Color(0xFF0F172A), // Dark slate
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Row(
@@ -134,7 +147,10 @@ class _TreasurerHomeScreenState extends State<TreasurerHomeScreen> {
                                 const SizedBox(height: 2),
                                 Text(
                                   'Resident Unit: $blockName - $flatNumber',
-                                  style: const TextStyle(fontSize: 11, color: Colors.white60),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.white60,
+                                  ),
                                 ),
                               ],
                             ],
@@ -142,7 +158,10 @@ class _TreasurerHomeScreenState extends State<TreasurerHomeScreen> {
                         ),
                         const SizedBox(width: 12),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.amber.shade700,
                             borderRadius: BorderRadius.circular(20),
@@ -150,7 +169,11 @@ class _TreasurerHomeScreenState extends State<TreasurerHomeScreen> {
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.account_balance, color: Colors.white, size: 14),
+                              Icon(
+                                Icons.account_balance,
+                                color: Colors.white,
+                                size: 14,
+                              ),
                               SizedBox(width: 4),
                               Text(
                                 'Treasurer',
@@ -175,7 +198,8 @@ class _TreasurerHomeScreenState extends State<TreasurerHomeScreen> {
                   builder: (context, sumSnap) {
                     final sData = sumSnap.data ?? {};
                     final netBal = (sData['net_balance'] ?? 0.0).toDouble();
-                    final collected = (sData['total_collected'] ?? 0.0).toDouble();
+                    final collected = (sData['total_collected'] ?? 0.0)
+                        .toDouble();
                     final pending = (sData['total_pending'] ?? 0.0).toDouble();
 
                     return InkWell(
@@ -196,12 +220,27 @@ class _TreasurerHomeScreenState extends State<TreasurerHomeScreen> {
                               children: [
                                 const Text(
                                   'Live Society Treasury',
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: Colors.black87,
+                                  ),
                                 ),
                                 Row(
                                   children: [
-                                    Text('View Ledger', style: TextStyle(fontSize: 12, color: Colors.blue.shade700, fontWeight: FontWeight.w600)),
-                                    Icon(Icons.chevron_right, size: 16, color: Colors.blue.shade700),
+                                    Text(
+                                      'View Ledger',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.blue.shade700,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.chevron_right,
+                                      size: 16,
+                                      color: Colors.blue.shade700,
+                                    ),
                                   ],
                                 ),
                               ],
@@ -210,9 +249,21 @@ class _TreasurerHomeScreenState extends State<TreasurerHomeScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                _quickStat('Net Balance', '₹${netBal.toStringAsFixed(0)}', Colors.blue.shade800),
-                                _quickStat('Total Collected', '₹${collected.toStringAsFixed(0)}', Colors.green.shade800),
-                                _quickStat('Pending Dues', '₹${pending.toStringAsFixed(0)}', Colors.orange.shade900),
+                                _quickStat(
+                                  'Net Balance',
+                                  '₹${netBal.toStringAsFixed(0)}',
+                                  Colors.blue.shade800,
+                                ),
+                                _quickStat(
+                                  'Total Collected',
+                                  '₹${collected.toStringAsFixed(0)}',
+                                  Colors.green.shade800,
+                                ),
+                                _quickStat(
+                                  'Pending Dues',
+                                  '₹${pending.toStringAsFixed(0)}',
+                                  Colors.orange.shade900,
+                                ),
                               ],
                             ),
                           ],
@@ -227,14 +278,54 @@ class _TreasurerHomeScreenState extends State<TreasurerHomeScreen> {
                 _buildSectionTitle('Treasury & Financial Management'),
                 const SizedBox(height: 8),
                 _buildGrid([
-                  _ActionItem('Ledger Summary', Icons.account_balance_wallet, Colors.indigo, () => _navigateToFinanceTab(0)),
-                  _ActionItem('Maintenance Bills', Icons.add_card, Colors.blueAccent, () => _navigateToFinanceTab(1)),
-                  _ActionItem('Society Income', Icons.savings_outlined, Colors.teal.shade700, () => _navigateToFinanceTab(2)),
-                  _ActionItem('Offline Verify', Icons.verified, Colors.teal, () => _navigateToFinanceTab(3)),
-                  _ActionItem('Expenses & Utilities', Icons.money_off, Colors.redAccent, () => _navigateToFinanceTab(4)),
-                  _ActionItem('Payment Receipts', Icons.history, Colors.deepPurple, () => _navigateToFinanceTab(5)),
-                  _ActionItem('Bank Details', Icons.account_balance, Colors.amber.shade800, () => _navigateToFinanceTab(6)),
-                  _ActionItem('Financial Reports', Icons.insert_chart_outlined, Colors.cyan.shade800, () => Navigator.pushNamed(context, '/treasurer-reports')),
+                  _ActionItem(
+                    'Ledger Summary',
+                    Icons.account_balance_wallet,
+                    Colors.indigo,
+                    () => _navigateToFinanceTab(0),
+                  ),
+                  _ActionItem(
+                    'Maintenance Bills',
+                    Icons.add_card,
+                    Colors.blueAccent,
+                    () => _navigateToFinanceTab(1),
+                  ),
+                  _ActionItem(
+                    'Society Income',
+                    Icons.savings_outlined,
+                    Colors.teal.shade700,
+                    () => _navigateToFinanceTab(2),
+                  ),
+                  _ActionItem(
+                    'Offline Verify',
+                    Icons.verified,
+                    Colors.teal,
+                    () => _navigateToFinanceTab(3),
+                  ),
+                  _ActionItem(
+                    'Expenses & Utilities',
+                    Icons.money_off,
+                    Colors.redAccent,
+                    () => _navigateToFinanceTab(4),
+                  ),
+                  _ActionItem(
+                    'Payment Receipts',
+                    Icons.history,
+                    Colors.deepPurple,
+                    () => _navigateToFinanceTab(5),
+                  ),
+                  _ActionItem(
+                    'Bank Details',
+                    Icons.account_balance,
+                    Colors.amber.shade800,
+                    () => _navigateToFinanceTab(6),
+                  ),
+                  _ActionItem(
+                    'Financial Reports',
+                    Icons.insert_chart_outlined,
+                    Colors.cyan.shade800,
+                    () => Navigator.pushNamed(context, '/treasurer-reports'),
+                  ),
                 ]),
 
                 const SizedBox(height: 20),
@@ -243,15 +334,69 @@ class _TreasurerHomeScreenState extends State<TreasurerHomeScreen> {
                 _buildSectionTitle('Resident Services & Community'),
                 const SizedBox(height: 8),
                 _buildGrid([
-                  _ActionItem('Pay Maintenance', Icons.receipt_long, Colors.indigo.shade700, () => Navigator.pushNamed(context, '/finance')),
-                  _ActionItem('Security Desk', Icons.security_outlined, Colors.red.shade700, () => Navigator.pushNamed(context, '/security')),
-                  _ActionItem('My Vehicles', Icons.directions_car_outlined, Colors.blueGrey, () => Navigator.pushNamed(context, '/vehicles')),
-                  _ActionItem('Notices', Icons.campaign_outlined, Colors.teal, () => Navigator.pushNamed(context, '/notices')),
-                  _ActionItem('Meetings', Icons.groups_outlined, Colors.deepPurple, () => Navigator.pushNamed(context, '/meetings')),
-                  _ActionItem('Society Polls', Icons.how_to_vote_outlined, Colors.orange.shade700, () => Navigator.pushNamed(context, '/polls')),
-                  _ActionItem('Lost & Found', Icons.search_outlined, Colors.brown, () => Navigator.pushNamed(context, '/lost-found')),
-                  _ActionItem('Amenities Booking', Icons.pool_outlined, Colors.cyan.shade700, () => Navigator.pushNamed(context, '/amenities')),
-                  _ActionItem('Complaints Desk', Icons.report_problem_outlined, Colors.amber.shade900, () => Navigator.pushNamed(context, '/complaints')),
+                  _ActionItem(
+                    'Pay Maintenance',
+                    Icons.receipt_long,
+                    Colors.indigo.shade700,
+                    () => Navigator.pushNamed(
+                      context,
+                      '/treasurer-pay-maintenance',
+                    ),
+                  ),
+                  _ActionItem(
+                    'Security Desk',
+                    Icons.security_outlined,
+                    Colors.red.shade700,
+                    () => Navigator.pushNamed(context, '/security'),
+                  ),
+                  _ActionItem(
+                    'My Vehicles',
+                    Icons.directions_car_outlined,
+                    Colors.blueGrey,
+                    () => Navigator.pushNamed(context, '/vehicles'),
+                  ),
+                  _ActionItem(
+                    'Notices',
+                    Icons.campaign_outlined,
+                    Colors.teal,
+                    () => Navigator.pushNamed(context, '/notices'),
+                  ),
+                  _ActionItem(
+                    'Meetings',
+                    Icons.groups_outlined,
+                    Colors.deepPurple,
+                    () => Navigator.pushNamed(context, '/meetings'),
+                  ),
+                  _ActionItem(
+                    'Society Polls',
+                    Icons.how_to_vote_outlined,
+                    Colors.orange.shade700,
+                    () => Navigator.pushNamed(context, '/polls'),
+                  ),
+                  _ActionItem(
+                    'Lost & Found',
+                    Icons.search_outlined,
+                    Colors.brown,
+                    () => Navigator.pushNamed(context, '/lost-found'),
+                  ),
+                  _ActionItem(
+                    'Amenities Booking',
+                    Icons.pool_outlined,
+                    Colors.cyan.shade700,
+                    () => Navigator.pushNamed(context, '/amenities'),
+                  ),
+                  _ActionItem(
+                    'Complaints Desk',
+                    Icons.report_problem_outlined,
+                    Colors.amber.shade900,
+                    () => Navigator.pushNamed(context, '/complaints'),
+                  ),
+                  _ActionItem(
+                    'Society Documents',
+                    Icons.folder_shared_outlined,
+                    Colors.indigo,
+                    () => Navigator.pushNamed(context, '/society-documents'),
+                  ),
                 ]),
                 const SizedBox(height: 24),
               ],
@@ -265,7 +410,14 @@ class _TreasurerHomeScreenState extends State<TreasurerHomeScreen> {
   Widget _quickStat(String title, String val, Color color) {
     return Column(
       children: [
-        Text(val, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: color)),
+        Text(
+          val,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: color,
+          ),
+        ),
         const SizedBox(height: 2),
         Text(title, style: const TextStyle(fontSize: 11, color: Colors.grey)),
       ],
@@ -275,7 +427,11 @@ class _TreasurerHomeScreenState extends State<TreasurerHomeScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87),
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: Colors.black87,
+      ),
     );
   }
 
@@ -314,7 +470,11 @@ class _TreasurerHomeScreenState extends State<TreasurerHomeScreen> {
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.black87),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
                   ),
                 ],
               ),

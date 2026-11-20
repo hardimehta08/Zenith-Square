@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/datasource/communication_api_service.dart';
+import 'notice_widgets.dart';
 
 class BlockSecretaryNoticesScreen extends StatefulWidget {
   const BlockSecretaryNoticesScreen({super.key});
@@ -36,8 +37,10 @@ class _BlockSecretaryNoticesScreenState
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: Colors.blueGrey.shade50,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) {
@@ -55,21 +58,11 @@ class _BlockSecretaryNoticesScreenState
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Post Block Announcement',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(ctx),
-                        ),
-                      ],
+                    NoticeComposerHeader(
+                      title: 'Post Block Announcement',
+                      subtitle: 'Share an official update with your block.',
+                      icon: Icons.domain_outlined,
+                      onClose: () => Navigator.pop(ctx),
                     ),
                     const SizedBox(height: 14),
                     if (sheetError != null) ...[
@@ -177,12 +170,23 @@ class _BlockSecretaryNoticesScreenState
                               }
                             },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal.shade900,
+                        backgroundColor: Colors.indigo.shade900,
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
 
                       child: isSubmitting
-                          ? const CircularProgressIndicator(color: Colors.white)
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
                           : const Text(
                               'Post to My Block',
                               style: TextStyle(
@@ -204,15 +208,14 @@ class _BlockSecretaryNoticesScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.blueGrey.shade50,
       appBar: AppBar(title: const Text('Block Notice Board')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openPublishNoticeSheet,
-        backgroundColor: Colors.teal.shade900,
-        icon: const Icon(Icons.campaign, color: Colors.white),
-        label: const Text(
-          'Post Block Notice',
-          style: TextStyle(color: Colors.white),
-        ),
+        backgroundColor: Colors.indigo.shade900,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Publish block notice'),
       ),
       body: FutureBuilder<List<dynamic>>(
         future: _noticesFuture,
@@ -220,28 +223,51 @@ class _BlockSecretaryNoticesScreenState
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          final notices = snapshot.data ?? [];
-          if (notices.isEmpty) {
-            return const Center(child: Text('No notices for your block.'));
+          if (snapshot.hasError) {
+            return NoticeErrorState(
+              message: snapshot.error.toString().replaceAll('Exception: ', ''),
+              onRetry: _loadNotices,
+            );
           }
-          return ListView.separated(
-            padding: const EdgeInsets.all(12),
-            itemCount: notices.length,
-            separatorBuilder: (ctx, i) => const SizedBox(height: 8),
-            itemBuilder: (ctx, i) {
-              final item = notices[i];
-              return Card(
-                child: ListTile(
-                  title: Text(
-                    item['title'] ?? '',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    '${item['description']}\nPosted by: ${item['author_name'] ?? 'Admin'}',
-                  ),
-                ),
-              );
-            },
+
+          final notices = snapshot.data ?? [];
+          return RefreshIndicator(
+            onRefresh: () async => _loadNotices(),
+            child: ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 104),
+              itemCount: notices.isEmpty ? 2 : notices.length + 1,
+              separatorBuilder: (ctx, i) => const SizedBox(height: 12),
+              itemBuilder: (ctx, i) {
+                if (i == 0) {
+                  return NoticePageHeader(
+                    title: 'Block Notice Board',
+                    subtitle:
+                        'Official announcements and updates for residents in your block.',
+                    count: notices.length,
+                    icon: Icons.domain_outlined,
+                  );
+                }
+
+                if (notices.isEmpty) {
+                  return const NoticeEmptyState(
+                    title: 'No block notices yet',
+                    subtitle:
+                        'Published announcements for your block will appear here.',
+                  );
+                }
+
+                final item = notices[i - 1];
+                return NoticeEntryCard(
+                  title: item['title']?.toString() ?? 'Untitled notice',
+                  description: item['description']?.toString() ?? '',
+                  priority: item['priority']?.toString() ?? 'normal',
+                  scope: item['block_name']?.toString() ?? 'Your block',
+                  author: item['author_name']?.toString() ?? 'Administration',
+                  createdAt: item['created_at'],
+                );
+              },
+            ),
           );
         },
       ),

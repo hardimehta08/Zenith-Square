@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../../data/datasource/finance_api_service.dart';
 
 class FinanceScreen extends StatefulWidget {
-  const FinanceScreen({super.key});
+  final bool showSocietyLedgerTabs;
+
+  const FinanceScreen({super.key, this.showSocietyLedgerTabs = true});
 
   @override
   State<FinanceScreen> createState() => _FinanceScreenState();
@@ -16,7 +18,10 @@ class _FinanceScreenState extends State<FinanceScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(
+      length: widget.showSocietyLedgerTabs ? 4 : 2,
+      vsync: this,
+    );
   }
 
   @override
@@ -37,21 +42,25 @@ class _FinanceScreenState extends State<FinanceScreen>
         ),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'Due Bill'),
-            Tab(text: 'History'),
-            Tab(text: 'Incomes'),
-            Tab(text: 'Expenses'),
+          tabs: [
+            const Tab(text: 'Due Bill'),
+            const Tab(text: 'History'),
+            if (widget.showSocietyLedgerTabs) ...[
+              const Tab(text: 'Incomes'),
+              const Tab(text: 'Expenses'),
+            ],
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
-        children: const [
-          _PendingBillTab(),
-          _PaymentHistoryTab(),
-          _SocietyIncomesTab(),
-          _SocietyExpensesTab(),
+        children: [
+          const _PendingBillTab(),
+          const _PaymentHistoryTab(),
+          if (widget.showSocietyLedgerTabs) ...[
+            const _SocietyIncomesTab(),
+            const _SocietyExpensesTab(),
+          ],
         ],
       ),
     );
@@ -396,47 +405,46 @@ class _PaymentHistoryTabState extends State<_PaymentHistoryTab> {
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     subtitle: Text(
-                      'Receipt: ${item['receipt_number'] ?? 'N/A'}\nMethod: ${item['payment_method'] ?? 'Online'}',
+                      'Receipt: ${item['receipt_number'] ?? '—'}\nPayer: ${item['payer_name'] ?? '—'} · Method: ${item['payment_method'] ?? '—'}',
                     ),
                     isThreeLine: true,
                     trailing: Text(
                       item['payment_date'] != null
                           ? item['payment_date'].toString().substring(0, 10)
                           : '',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.only(left: 14, right: 14, bottom: 8),
+                    padding: const EdgeInsets.only(
+                      left: 14,
+                      right: 14,
+                      bottom: 8,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
                             visualDensity: VisualDensity.compact,
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             foregroundColor: Colors.green.shade800,
                             side: BorderSide(color: Colors.green.shade200),
                           ),
                           icon: const Icon(Icons.visibility_outlined, size: 14),
-                          label: const Text('View Receipt', style: TextStyle(fontSize: 12)),
+                          label: const Text(
+                            'View Receipt',
+                            style: TextStyle(fontSize: 12),
+                          ),
                           onPressed: () {
-                            final amt = (item['amount'] is num ? item['amount'] : double.tryParse(item['amount'].toString()) ?? 0.0).toDouble();
-                            final doc = FinancialDocument(
-                              type: FinancialDocumentType.paymentReceipt,
-                              docNumber: item['receipt_number'] ?? 'REC-${item['receipt_id'] ?? ''}',
-                              title: 'MAINTENANCE PAYMENT RECEIPT',
-                              societyName: 'Zenith Square Co-Op Housing Society Ltd.',
-                              categoryOrHead: 'Maintenance Charges (${item['bill_month'] ?? 'Monthly'})',
-                              amount: amt,
-                              date: item['payment_date'] != null ? item['payment_date'].toString().substring(0, 10) : (item['generated_at'] ?? ''),
-                              status: 'COMPLETED & VERIFIED',
-                              payerOrPayee: 'Resident Unit',
-                              paymentMethod: item['payment_method'] ?? 'ONLINE',
-                              extraDetails: {
-                                'Receipt Number': item['receipt_number'] ?? '',
-                                'Billing Cycle': item['bill_month'] ?? '',
-                              },
+                            final doc = FinancialDocument.fromPaymentReceipt(
+                              Map<String, dynamic>.from(item as Map),
                             );
                             FinancialDocumentHelper.viewDocument(context, doc);
                           },
@@ -445,31 +453,29 @@ class _PaymentHistoryTabState extends State<_PaymentHistoryTab> {
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
                             visualDensity: VisualDensity.compact,
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             backgroundColor: Colors.green.shade700,
                             foregroundColor: Colors.white,
                           ),
-                          icon: const Icon(Icons.picture_as_pdf_outlined, size: 14),
-                          label: const Text('Download PDF', style: TextStyle(fontSize: 12)),
+                          icon: const Icon(
+                            Icons.picture_as_pdf_outlined,
+                            size: 14,
+                          ),
+                          label: const Text(
+                            'Download PDF',
+                            style: TextStyle(fontSize: 12),
+                          ),
                           onPressed: () {
-                            final amt = (item['amount'] is num ? item['amount'] : double.tryParse(item['amount'].toString()) ?? 0.0).toDouble();
-                            final doc = FinancialDocument(
-                              type: FinancialDocumentType.paymentReceipt,
-                              docNumber: item['receipt_number'] ?? 'REC-${item['receipt_id'] ?? ''}',
-                              title: 'MAINTENANCE PAYMENT RECEIPT',
-                              societyName: 'Zenith Square Co-Op Housing Society Ltd.',
-                              categoryOrHead: 'Maintenance Charges (${item['bill_month'] ?? 'Monthly'})',
-                              amount: amt,
-                              date: item['payment_date'] != null ? item['payment_date'].toString().substring(0, 10) : (item['generated_at'] ?? ''),
-                              status: 'COMPLETED & VERIFIED',
-                              payerOrPayee: 'Resident Unit',
-                              paymentMethod: item['payment_method'] ?? 'ONLINE',
-                              extraDetails: {
-                                'Receipt Number': item['receipt_number'] ?? '',
-                                'Billing Cycle': item['bill_month'] ?? '',
-                              },
+                            final doc = FinancialDocument.fromPaymentReceipt(
+                              Map<String, dynamic>.from(item as Map),
                             );
-                            FinancialDocumentHelper.downloadDocument(context, doc);
+                            FinancialDocumentHelper.downloadDocument(
+                              context,
+                              doc,
+                            );
                           },
                         ),
                       ],

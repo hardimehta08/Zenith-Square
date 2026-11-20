@@ -17,6 +17,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  final _newPasswordFocusNode = FocusNode();
+  final _confirmPasswordFocusNode = FocusNode();
+
   bool _isSubmitting = false;
   bool _obscureNewPass = true;
   bool _obscureConfirmPass = true;
@@ -91,6 +94,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     _otpController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
+    _newPasswordFocusNode.dispose();
+    _confirmPasswordFocusNode.dispose();
     super.dispose();
   }
 
@@ -119,6 +124,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   controller: _otpController,
                   keyboardType: TextInputType.number,
                   maxLength: 6,
+                  textInputAction: TextInputAction.next,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: const InputDecoration(
                     hintText: '4 or 6-digit code',
@@ -126,6 +132,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     border: OutlineInputBorder(),
                     counterText: '',
                   ),
+                  onFieldSubmitted: (_) =>
+                      FocusScope.of(context).requestFocus(_newPasswordFocusNode),
                   validator: (v) {
                     final val = v?.trim() ?? '';
                     if (val.isEmpty) return 'Please enter the OTP code';
@@ -140,7 +148,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _newPasswordController,
+                  focusNode: _newPasswordFocusNode,
                   obscureText: _obscureNewPass,
+                  textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
                     hintText: 'Minimum 6 characters',
                     prefixIcon: const Icon(Icons.lock_outline),
@@ -155,6 +165,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           setState(() => _obscureNewPass = !_obscureNewPass),
                     ),
                   ),
+                  onFieldSubmitted: (_) => FocusScope.of(context)
+                      .requestFocus(_confirmPasswordFocusNode),
                   validator: (v) {
                     if (v == null || v.isEmpty) {
                       return 'Please enter new password';
@@ -172,7 +184,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _confirmPasswordController,
+                  focusNode: _confirmPasswordFocusNode,
                   obscureText: _obscureConfirmPass,
+                  textInputAction: TextInputAction.done,
                   decoration: InputDecoration(
                     hintText: 'Re-enter new password',
                     prefixIcon: const Icon(Icons.lock_outline),
@@ -188,6 +202,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       ),
                     ),
                   ),
+                  onFieldSubmitted: (_) {
+                    if (!_isSubmitting) _handlePasswordReset();
+                  },
                   validator: (v) {
                     if (v == null || v.isEmpty) {
                       return 'Please confirm your password';

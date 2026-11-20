@@ -167,7 +167,7 @@ class _ChairmanHomeScreenState extends State<ChairmanHomeScreen> {
                     '/chairman-complaints',
                   ),
                   _ActionItem(
-                    'Announcements',
+                    'Notices',
                     Icons.campaign_outlined,
                     Colors.teal,
                     '/chairman-notices',

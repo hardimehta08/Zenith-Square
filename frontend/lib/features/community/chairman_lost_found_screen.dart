@@ -66,49 +66,99 @@ class _ChairmanLostFoundScreenState extends State<ChairmanLostFoundScreen> {
   }
 
   void _showUpdateStatusDialog(String itemId, String currentStatus) {
-    String selectedStatus = currentStatus;
+    String normalized = currentStatus;
+    if (normalized.toLowerCase() == 'resolved' ||
+        normalized.toLowerCase() == 'returned') {
+      normalized = 'Claimed';
+    }
+    String selectedStatus = ['Lost', 'Found', 'Claimed'].contains(normalized)
+        ? normalized
+        : 'Claimed';
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Update Item Resolution'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Mark the current resolution state of this item:'),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value:
-                    [
-                      'Lost',
-                      'Found',
-                      'Claimed',
-                      'Resolved',
-                      'Returned',
-                    ].contains(selectedStatus)
-                    ? selectedStatus
-                    : 'Claimed',
-                decoration: const InputDecoration(border: OutlineInputBorder()),
-                items: const [
-                  DropdownMenuItem(value: 'Lost', child: Text('Lost')),
-                  DropdownMenuItem(value: 'Found', child: Text('Found')),
-                  DropdownMenuItem(
-                    value: 'Claimed',
-                    child: Text('Claimed by Owner'),
+          title: const Text('Update Item Status'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Select the status of this item:'),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: selectedStatus,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                   ),
-                  DropdownMenuItem(value: 'Returned', child: Text('Returned')),
-                  DropdownMenuItem(
-                    value: 'Resolved',
-                    child: Text('Resolved / Closed'),
-                  ),
-                ],
-                onChanged: (val) {
-                  if (val != null) setDialogState(() => selectedStatus = val);
-                },
-              ),
-            ],
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'Lost',
+                      child: Row(
+                        children: [
+                          Icon(Icons.search, size: 18, color: Colors.red),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Lost (Searching)',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Found',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            size: 18,
+                            color: Colors.green,
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Found (Awaiting Owner)',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Claimed',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.check_circle_outline,
+                            size: 18,
+                            color: Colors.blue,
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Claimed (Returned to Owner)',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) setDialogState(() => selectedStatus = val);
+                  },
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -124,7 +174,6 @@ class _ChairmanLostFoundScreenState extends State<ChairmanLostFoundScreen> {
                     selectedStatus,
                   );
 
-                  // Guard immediately after the async API call
                   if (!mounted) return;
 
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -214,6 +263,7 @@ class _ChairmanLostFoundScreenState extends State<ChairmanLostFoundScreen> {
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
                     value: itemType,
+                    isExpanded: true,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       contentPadding: EdgeInsets.symmetric(
@@ -298,7 +348,6 @@ class _ChairmanLostFoundScreenState extends State<ChairmanLostFoundScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // INLINE ERROR BANNER
                   if (sheetError != null) ...[
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -416,7 +465,7 @@ class _ChairmanLostFoundScreenState extends State<ChairmanLostFoundScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           tooltip: 'Back',
-          onPressed: () => Navigator.pop(context), // Standard clean pop
+          onPressed: () => Navigator.pop(context),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -441,7 +490,7 @@ class _ChairmanLostFoundScreenState extends State<ChairmanLostFoundScreen> {
                 const SizedBox(width: 8),
                 _buildFilterChip('found', 'Found'),
                 const SizedBox(width: 8),
-                _buildFilterChip('claimed', 'Claimed / Resolved'),
+                _buildFilterChip('claimed', 'Claimed'),
               ],
             ),
           ),
@@ -521,8 +570,14 @@ class _ChairmanLostFoundScreenState extends State<ChairmanLostFoundScreen> {
                     separatorBuilder: (ctx, i) => const SizedBox(height: 10),
                     itemBuilder: (ctx, i) {
                       final item = filtered[i];
-                      final status = (item['item_status'] ?? 'Lost').toString();
-                      final statusColor = _getStatusColor(status);
+                      final rawStatus = (item['item_status'] ?? 'Lost')
+                          .toString();
+                      final normalizedStatus =
+                          (rawStatus.toLowerCase() == 'resolved' ||
+                              rawStatus.toLowerCase() == 'returned')
+                          ? 'Claimed'
+                          : rawStatus;
+                      final statusColor = _getStatusColor(normalizedStatus);
                       final reportedBy =
                           item['reported_by_name'] ?? 'Management';
                       final location =
@@ -541,20 +596,22 @@ class _ChairmanLostFoundScreenState extends State<ChairmanLostFoundScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    item['item_name'] ?? '',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
+                                  Expanded(
+                                    child: Text(
+                                      item['item_name'] ?? '',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
                                     ),
                                   ),
+                                  const SizedBox(width: 8),
                                   InkWell(
                                     onTap: () => _showUpdateStatusDialog(
                                       item['item_id'],
-                                      status,
+                                      normalizedStatus,
                                     ),
                                     borderRadius: BorderRadius.circular(4),
                                     child: Container(
@@ -574,9 +631,10 @@ class _ChairmanLostFoundScreenState extends State<ChairmanLostFoundScreen> {
                                         ),
                                       ),
                                       child: Row(
+                                        mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Text(
-                                            status.toUpperCase(),
+                                            normalizedStatus.toUpperCase(),
                                             style: TextStyle(
                                               color: statusColor,
                                               fontSize: 11,
@@ -612,14 +670,17 @@ class _ChairmanLostFoundScreenState extends State<ChairmanLostFoundScreen> {
                                     color: Colors.grey.shade600,
                                   ),
                                   const SizedBox(width: 4),
-                                  Text(
-                                    location,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade700,
+                                  Expanded(
+                                    child: Text(
+                                      location,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade700,
+                                      ),
                                     ),
                                   ),
-                                  const Spacer(),
+                                  const SizedBox(width: 8),
                                   Icon(
                                     Icons.event_outlined,
                                     size: 14,

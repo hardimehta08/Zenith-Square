@@ -47,12 +47,24 @@ class _TreasurerFinanceScreenState extends State<TreasurerFinanceScreen>
           indicatorColor: Colors.blueAccent,
           tabs: const [
             Tab(icon: Icon(Icons.dashboard_outlined), text: 'Ledger Summary'),
-            Tab(icon: Icon(Icons.receipt_long_outlined), text: 'Maintenance Bills'),
+            Tab(
+              icon: Icon(Icons.receipt_long_outlined),
+              text: 'Maintenance Bills',
+            ),
             Tab(icon: Icon(Icons.savings_outlined), text: 'Society Income'),
-            Tab(icon: Icon(Icons.verified_outlined), text: 'Offline Verification'),
-            Tab(icon: Icon(Icons.money_off_outlined), text: 'Expenses & Utilities'),
+            Tab(
+              icon: Icon(Icons.verified_outlined),
+              text: 'Offline Verification',
+            ),
+            Tab(
+              icon: Icon(Icons.money_off_outlined),
+              text: 'Expenses & Utilities',
+            ),
             Tab(icon: Icon(Icons.history_outlined), text: 'Payment Receipts'),
-            Tab(icon: Icon(Icons.account_balance_outlined), text: 'Bank Details'),
+            Tab(
+              icon: Icon(Icons.account_balance_outlined),
+              text: 'Bank Details',
+            ),
           ],
         ),
       ),
@@ -68,6 +80,167 @@ class _TreasurerFinanceScreenState extends State<TreasurerFinanceScreen>
           _BankDetailsTab(),
         ],
       ),
+    );
+  }
+}
+
+class _BankDetailsFormDialog extends StatefulWidget {
+  final Map<String, dynamic> initialDetails;
+
+  const _BankDetailsFormDialog({required this.initialDetails});
+
+  @override
+  State<_BankDetailsFormDialog> createState() => _BankDetailsFormDialogState();
+}
+
+class _BankDetailsFormDialogState extends State<_BankDetailsFormDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final Map<String, TextEditingController> _controllers;
+
+  @override
+  void initState() {
+    super.initState();
+    _controllers = {
+      'account_name': _controller('account_name'),
+      'bank_name': _controller('bank_name'),
+      'account_number': _controller('account_number'),
+      'ifsc_code': _controller('ifsc_code'),
+      'branch': _controller('branch'),
+      'upi_id': _controller('upi_id'),
+    };
+  }
+
+  TextEditingController _controller(String key) =>
+      TextEditingController(text: widget.initialDetails[key]?.toString() ?? '');
+
+  @override
+  void dispose() {
+    for (final controller in _controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  Widget _formField(
+    String key,
+    String label, {
+    required IconData icon,
+    bool requiredField = true,
+    TextInputType? keyboardType,
+    TextCapitalization textCapitalization = TextCapitalization.words,
+    int? maxLength,
+    String? Function(String?)? validator,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextFormField(
+        controller: _controllers[key],
+        textCapitalization: textCapitalization,
+        keyboardType: keyboardType,
+        maxLength: maxLength,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon),
+          counterText: '',
+          border: const OutlineInputBorder(),
+        ),
+        validator:
+            validator ??
+            (value) {
+              if (requiredField && (value == null || value.trim().isEmpty)) {
+                return '$label is required';
+              }
+              return null;
+            },
+      ),
+    );
+  }
+
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+    Navigator.pop(
+      context,
+      _controllers.map(
+        (key, controller) => MapEntry(key, controller.text.trim()),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isEditing = widget.initialDetails['configured'] == true;
+    return AlertDialog(
+      title: Text(
+        isEditing ? 'Edit Society Bank Details' : 'Add Society Bank Details',
+      ),
+      content: SizedBox(
+        width: 420,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _formField(
+                  'account_name',
+                  'Account holder name',
+                  icon: Icons.person_outline,
+                ),
+                _formField(
+                  'bank_name',
+                  'Bank name',
+                  icon: Icons.account_balance_outlined,
+                ),
+                _formField(
+                  'account_number',
+                  'Account number',
+                  icon: Icons.numbers,
+                  keyboardType: TextInputType.number,
+                  maxLength: 34,
+                ),
+                _formField(
+                  'ifsc_code',
+                  'IFSC code',
+                  icon: Icons.vpn_key_outlined,
+                  maxLength: 11,
+                  textCapitalization: TextCapitalization.characters,
+                  validator: (value) {
+                    final code = value?.trim().toUpperCase() ?? '';
+                    if (code.isEmpty) return 'IFSC code is required';
+                    if (!RegExp(r'^[A-Z]{4}0[A-Z0-9]{6}$').hasMatch(code)) {
+                      return 'Enter a valid 11-character IFSC code';
+                    }
+                    return null;
+                  },
+                ),
+                _formField(
+                  'branch',
+                  'Branch',
+                  icon: Icons.location_on_outlined,
+                ),
+                _formField(
+                  'upi_id',
+                  'UPI ID (optional)',
+                  icon: Icons.qr_code,
+                  requiredField: false,
+                  textCapitalization: TextCapitalization.none,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton.icon(
+          onPressed: _submit,
+          icon: const Icon(Icons.save_outlined),
+          label: const Text('Save details'),
+        ),
+      ],
     );
   }
 }
@@ -130,7 +303,9 @@ class _LedgerSummaryTabState extends State<_LedgerSummaryTab> {
               Card(
                 elevation: 2,
                 color: Colors.blue.shade900,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
                   child: Column(
@@ -141,17 +316,26 @@ class _LedgerSummaryTabState extends State<_LedgerSummaryTab> {
                         children: [
                           const Text(
                             'Net Treasury Balance',
-                            style: TextStyle(color: Colors.white70, fontSize: 14),
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white24,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: const Text(
                               'Live from DB',
-                              style: TextStyle(color: Colors.white, fontSize: 11),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                              ),
                             ),
                           ),
                         ],
@@ -223,11 +407,16 @@ class _LedgerSummaryTabState extends State<_LedgerSummaryTab> {
                         backgroundColor: Colors.blueAccent,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                       onPressed: () {
                         // Switch to maintenance bills tab
-                        final parent = context.findAncestorStateOfType<_TreasurerFinanceScreenState>();
+                        final parent = context
+                            .findAncestorStateOfType<
+                              _TreasurerFinanceScreenState
+                            >();
                         parent?._tabController.animateTo(1);
                       },
                       icon: const Icon(Icons.add_card, size: 18),
@@ -241,11 +430,16 @@ class _LedgerSummaryTabState extends State<_LedgerSummaryTab> {
                         backgroundColor: Colors.teal,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                       onPressed: () {
                         // Switch to offline verification tab
-                        final parent = context.findAncestorStateOfType<_TreasurerFinanceScreenState>();
+                        final parent = context
+                            .findAncestorStateOfType<
+                              _TreasurerFinanceScreenState
+                            >();
                         parent?._tabController.animateTo(2);
                       },
                       icon: const Icon(Icons.check_circle_outline, size: 18),
@@ -262,11 +456,17 @@ class _LedgerSummaryTabState extends State<_LedgerSummaryTab> {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     foregroundColor: Colors.indigo.shade900,
                     side: BorderSide(color: Colors.indigo.shade300),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
-                  onPressed: () => Navigator.pushNamed(context, '/treasurer-reports'),
+                  onPressed: () =>
+                      Navigator.pushNamed(context, '/treasurer-reports'),
                   icon: const Icon(Icons.insert_chart_outlined, size: 18),
-                  label: const Text('View Financial Analytics & Executive Reports', style: TextStyle(fontWeight: FontWeight.bold)),
+                  label: const Text(
+                    'View Financial Analytics & Executive Reports',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ],
@@ -276,7 +476,13 @@ class _LedgerSummaryTabState extends State<_LedgerSummaryTab> {
     );
   }
 
-  Widget _metricCard(String title, String value, IconData icon, Color color, Color bg) {
+  Widget _metricCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    Color bg,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -296,7 +502,11 @@ class _LedgerSummaryTabState extends State<_LedgerSummaryTab> {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -356,7 +566,10 @@ class _MaintenanceBillsTabState extends State<_MaintenanceBillsTab> {
       text: '${_getMonthName(DateTime.now().month)} ${DateTime.now().year}',
     );
     final dueDateController = TextEditingController(
-      text: DateTime.now().add(const Duration(days: 15)).toString().substring(0, 10),
+      text: DateTime.now()
+          .add(const Duration(days: 15))
+          .toString()
+          .substring(0, 10),
     );
     bool isSubmitting = false;
 
@@ -364,7 +577,9 @@ class _MaintenanceBillsTabState extends State<_MaintenanceBillsTab> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: const Text('Generate Monthly Bills'),
           content: SizedBox(
             width: 420,
@@ -400,7 +615,9 @@ class _MaintenanceBillsTabState extends State<_MaintenanceBillsTab> {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+              ),
               onPressed: isSubmitting
                   ? null
                   : () async {
@@ -415,7 +632,10 @@ class _MaintenanceBillsTabState extends State<_MaintenanceBillsTab> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               backgroundColor: Colors.green,
-                              content: Text(res['message'] ?? 'Bills generated successfully!'),
+                              content: Text(
+                                res['message'] ??
+                                    'Bills generated successfully!',
+                              ),
                             ),
                           );
                           _refresh();
@@ -425,14 +645,26 @@ class _MaintenanceBillsTabState extends State<_MaintenanceBillsTab> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             backgroundColor: Colors.red,
-                            content: Text(e.toString().replaceAll('Exception: ', '')),
+                            content: Text(
+                              e.toString().replaceAll('Exception: ', ''),
+                            ),
                           ),
                         );
                       }
                     },
               child: isSubmitting
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('Generate Now', style: TextStyle(color: Colors.white)),
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Text(
+                      'Generate Now',
+                      style: TextStyle(color: Colors.white),
+                    ),
             ),
           ],
         ),
@@ -441,7 +673,20 @@ class _MaintenanceBillsTabState extends State<_MaintenanceBillsTab> {
   }
 
   String _getMonthName(int month) {
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
     return months[month - 1];
   }
 
@@ -466,8 +711,13 @@ class _MaintenanceBillsTabState extends State<_MaintenanceBillsTab> {
                       },
                     )
                   : null,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 10,
+                horizontal: 12,
+              ),
               isDense: true,
             ),
             onChanged: (val) {
@@ -527,20 +777,30 @@ class _MaintenanceBillsTabState extends State<_MaintenanceBillsTab> {
 
                   // Search query filter (Name wise & Flat wise)
                   if (_searchQuery.isNotEmpty) {
-                    final resident = (b['resident_name'] ?? '').toString().toLowerCase();
-                    final flat = (b['flat_number'] ?? '').toString().toLowerCase();
-                    final block = (b['block_name'] ?? '').toString().toLowerCase();
-                    final fullCardText = 'flat $flat ($block) - $resident'.toLowerCase();
+                    final resident = (b['resident_name'] ?? '')
+                        .toString()
+                        .toLowerCase();
+                    final flat = (b['flat_number'] ?? '')
+                        .toString()
+                        .toLowerCase();
+                    final block = (b['block_name'] ?? '')
+                        .toString()
+                        .toLowerCase();
+                    final fullCardText = 'flat $flat ($block) - $resident'
+                        .toLowerCase();
                     final fullFlat = '$flat ($block)'.toLowerCase();
                     final fullFlat2 = '$block-$flat'.toLowerCase();
 
-                    final allResidents = (b['all_residents'] as List<dynamic>?)
+                    final allResidents =
+                        (b['all_residents'] as List<dynamic>?)
                             ?.map((e) => e.toString().toLowerCase())
                             .toList() ??
                         [];
-                    final matchesResident = resident.contains(_searchQuery) ||
+                    final matchesResident =
+                        resident.contains(_searchQuery) ||
                         allResidents.any((r) => r.contains(_searchQuery));
-                    final matchesFlat = flat.contains(_searchQuery) ||
+                    final matchesFlat =
+                        flat.contains(_searchQuery) ||
                         fullCardText.contains(_searchQuery) ||
                         fullFlat.contains(_searchQuery) ||
                         fullFlat2.contains(_searchQuery);
@@ -556,13 +816,20 @@ class _MaintenanceBillsTabState extends State<_MaintenanceBillsTab> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.search_off, size: 48, color: Colors.grey.shade400),
+                        Icon(
+                          Icons.search_off,
+                          size: 48,
+                          color: Colors.grey.shade400,
+                        ),
                         const SizedBox(height: 12),
                         Text(
                           _searchQuery.isNotEmpty
                               ? 'No maintenance bills found for "$_searchQuery"'
                               : 'No bills found matching filter.',
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
+                          ),
                         ),
                       ],
                     ),
@@ -570,21 +837,34 @@ class _MaintenanceBillsTabState extends State<_MaintenanceBillsTab> {
                 }
 
                 return ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   itemCount: bills.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final b = bills[index];
-                    final residentName = (b['resident_name'] ?? '').toString().trim();
-                    final isAssigned = (b['is_assigned'] == true) ||
+                    final residentName = (b['resident_name'] ?? '')
+                        .toString()
+                        .trim();
+                    final isAssigned =
+                        (b['is_assigned'] == true) ||
                         (residentName.isNotEmpty &&
-                         residentName.toLowerCase() != 'unassigned' &&
-                         residentName.toLowerCase() != 'resident');
-                    final isPaid = (b['status'] ?? '').toString().toLowerCase() == 'paid';
+                            residentName.toLowerCase() != 'unassigned' &&
+                            residentName.toLowerCase() != 'resident');
+                    final isPaid =
+                        (b['status'] ?? '').toString().toLowerCase() == 'paid';
                     final payableAmt = b['payable_amount'] is num
                         ? (b['payable_amount'] as num)
-                        : (double.tryParse(b['payable_amount']?.toString() ?? '') ?? 0);
-                    final payableStr = (payableAmt is int || (payableAmt is double && payableAmt == payableAmt.roundToDouble()))
+                        : (double.tryParse(
+                                b['payable_amount']?.toString() ?? '',
+                              ) ??
+                              0);
+                    final payableStr =
+                        (payableAmt is int ||
+                            (payableAmt is double &&
+                                payableAmt == payableAmt.roundToDouble()))
                         ? payableAmt.toInt().toString()
                         : payableAmt.toStringAsFixed(2);
 
@@ -592,9 +872,15 @@ class _MaintenanceBillsTabState extends State<_MaintenanceBillsTab> {
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
-                        side: BorderSide(color: isAssigned ? Colors.grey.shade300 : Colors.grey.shade200),
+                        side: BorderSide(
+                          color: isAssigned
+                              ? Colors.grey.shade300
+                              : Colors.grey.shade200,
+                        ),
                       ),
-                      color: isAssigned ? Colors.white : const Color(0xFFFAFAFA),
+                      color: isAssigned
+                          ? Colors.white
+                          : const Color(0xFFFAFAFA),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -602,14 +888,20 @@ class _MaintenanceBillsTabState extends State<_MaintenanceBillsTab> {
                             leading: CircleAvatar(
                               backgroundColor: !isAssigned
                                   ? Colors.grey.shade100
-                                  : (isPaid ? Colors.green.shade50 : Colors.orange.shade50),
+                                  : (isPaid
+                                        ? Colors.green.shade50
+                                        : Colors.orange.shade50),
                               child: Icon(
                                 !isAssigned
                                     ? Icons.person_off_outlined
-                                    : (isPaid ? Icons.check_circle : Icons.pending),
+                                    : (isPaid
+                                          ? Icons.check_circle
+                                          : Icons.pending),
                                 color: !isAssigned
                                     ? Colors.grey.shade600
-                                    : (isPaid ? Colors.green : Colors.orange.shade800),
+                                    : (isPaid
+                                          ? Colors.green
+                                          : Colors.orange.shade800),
                               ),
                             ),
                             title: Text(
@@ -617,7 +909,9 @@ class _MaintenanceBillsTabState extends State<_MaintenanceBillsTab> {
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
-                                color: isAssigned ? Colors.black87 : Colors.grey.shade700,
+                                color: isAssigned
+                                    ? Colors.black87
+                                    : Colors.grey.shade700,
                               ),
                             ),
                             subtitle: Text(
@@ -633,23 +927,34 @@ class _MaintenanceBillsTabState extends State<_MaintenanceBillsTab> {
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
-                                    color: isAssigned ? Colors.black87 : Colors.grey.shade600,
+                                    color: isAssigned
+                                        ? Colors.black87
+                                        : Colors.grey.shade600,
                                   ),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: !isAssigned
                                         ? Colors.grey.shade200
-                                        : (isPaid ? Colors.green.shade100 : Colors.orange.shade100),
+                                        : (isPaid
+                                              ? Colors.green.shade100
+                                              : Colors.orange.shade100),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
-                                    !isAssigned ? 'UNASSIGNED' : (isPaid ? 'PAID' : 'DUE'),
+                                    !isAssigned
+                                        ? 'UNASSIGNED'
+                                        : (isPaid ? 'PAID' : 'DUE'),
                                     style: TextStyle(
                                       color: !isAssigned
                                           ? Colors.grey.shade700
-                                          : (isPaid ? Colors.green.shade900 : Colors.orange.shade900),
+                                          : (isPaid
+                                                ? Colors.green.shade900
+                                                : Colors.orange.shade900),
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -660,75 +965,142 @@ class _MaintenanceBillsTabState extends State<_MaintenanceBillsTab> {
                           ),
                           if (isPaid)
                             Padding(
-                              padding: const EdgeInsets.only(left: 14, right: 14, bottom: 8, top: 0),
+                              padding: const EdgeInsets.only(
+                                left: 14,
+                                right: 14,
+                                bottom: 8,
+                                top: 0,
+                              ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
                                   OutlinedButton.icon(
                                     style: OutlinedButton.styleFrom(
                                       visualDensity: VisualDensity.compact,
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 4,
+                                      ),
                                       foregroundColor: Colors.indigo.shade800,
-                                      side: BorderSide(color: Colors.indigo.shade200),
+                                      side: BorderSide(
+                                        color: Colors.indigo.shade200,
+                                      ),
                                     ),
-                                    icon: const Icon(Icons.visibility_outlined, size: 14),
-                                    label: const Text('View Bill', style: TextStyle(fontSize: 12)),
+                                    icon: const Icon(
+                                      Icons.visibility_outlined,
+                                      size: 14,
+                                    ),
+                                    label: const Text(
+                                      'View Bill',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
                                     onPressed: () {
                                       final doc = FinancialDocument(
-                                        type: FinancialDocumentType.maintenanceBill,
+                                        type: FinancialDocumentType
+                                            .maintenanceBill,
                                         docNumber: 'BILL-${b['bill_id']}',
                                         title: 'MAINTENANCE DUES BILL',
-                                        societyName: b['society_name'] ?? 'Zenith Square Co-Op Housing Society Ltd.',
-                                        societyCity: b['society_city'] ?? 'Ahmedabad, Gujarat',
-                                        categoryOrHead: 'Maintenance Charges (${b['bill_month']})',
-                                        amount: (b['payable_amount'] is num ? b['payable_amount'] : double.tryParse(b['payable_amount'].toString()) ?? 0.0).toDouble(),
+                                        societyName:
+                                            b['society_name'] ??
+                                            'Zenith Square Co-Op Housing Society Ltd.',
+                                        societyCity:
+                                            b['society_city'] ??
+                                            'Ahmedabad, Gujarat',
+                                        categoryOrHead:
+                                            'Maintenance Charges (${b['bill_month']})',
+                                        amount:
+                                            (b['payable_amount'] is num
+                                                    ? b['payable_amount']
+                                                    : double.tryParse(
+                                                            b['payable_amount']
+                                                                .toString(),
+                                                          ) ??
+                                                          0.0)
+                                                .toDouble(),
                                         date: b['due_date'] ?? '',
                                         status: 'PAID',
-                                        payerOrPayee: '${b['resident_name']} (Flat ${b['flat_number']})',
+                                        payerOrPayee:
+                                            '${b['resident_name']} (Flat ${b['flat_number']})',
                                         paymentMethod: 'SETTLED',
                                         extraDetails: {
-                                          'Flat & Block': 'Flat ${b['flat_number']} (${b['block_name']})',
-                                          'Resident': b['resident_name'] ?? 'N/A',
-                                          'Billing Month': b['bill_month'] ?? '',
+                                          'Flat & Block':
+                                              'Flat ${b['flat_number']} (${b['block_name']})',
+                                          'Resident':
+                                              b['resident_name'] ?? 'N/A',
+                                          'Billing Month':
+                                              b['bill_month'] ?? '',
                                           'Due Date': b['due_date'] ?? '',
                                           'Payment Status': 'PAID',
                                         },
                                       );
-                                      FinancialDocumentHelper.viewDocument(context, doc);
+                                      FinancialDocumentHelper.viewDocument(
+                                        context,
+                                        doc,
+                                      );
                                     },
                                   ),
                                   const SizedBox(width: 8),
                                   ElevatedButton.icon(
                                     style: ElevatedButton.styleFrom(
                                       visualDensity: VisualDensity.compact,
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 4,
+                                      ),
                                       backgroundColor: Colors.indigo.shade700,
                                       foregroundColor: Colors.white,
                                     ),
-                                    icon: const Icon(Icons.picture_as_pdf_outlined, size: 14),
-                                    label: const Text('Download PDF', style: TextStyle(fontSize: 12)),
+                                    icon: const Icon(
+                                      Icons.picture_as_pdf_outlined,
+                                      size: 14,
+                                    ),
+                                    label: const Text(
+                                      'Download PDF',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
                                     onPressed: () {
                                       final doc = FinancialDocument(
-                                        type: FinancialDocumentType.maintenanceBill,
+                                        type: FinancialDocumentType
+                                            .maintenanceBill,
                                         docNumber: 'BILL-${b['bill_id']}',
                                         title: 'MAINTENANCE DUES BILL',
-                                        societyName: b['society_name'] ?? 'Zenith Square Co-Op Housing Society Ltd.',
-                                        societyCity: b['society_city'] ?? 'Ahmedabad, Gujarat',
-                                        categoryOrHead: 'Maintenance Charges (${b['bill_month']})',
-                                        amount: (b['payable_amount'] is num ? b['payable_amount'] : double.tryParse(b['payable_amount'].toString()) ?? 0.0).toDouble(),
+                                        societyName:
+                                            b['society_name'] ??
+                                            'Zenith Square Co-Op Housing Society Ltd.',
+                                        societyCity:
+                                            b['society_city'] ??
+                                            'Ahmedabad, Gujarat',
+                                        categoryOrHead:
+                                            'Maintenance Charges (${b['bill_month']})',
+                                        amount:
+                                            (b['payable_amount'] is num
+                                                    ? b['payable_amount']
+                                                    : double.tryParse(
+                                                            b['payable_amount']
+                                                                .toString(),
+                                                          ) ??
+                                                          0.0)
+                                                .toDouble(),
                                         date: b['due_date'] ?? '',
                                         status: 'PAID',
-                                        payerOrPayee: '${b['resident_name']} (Flat ${b['flat_number']})',
+                                        payerOrPayee:
+                                            '${b['resident_name']} (Flat ${b['flat_number']})',
                                         paymentMethod: 'SETTLED',
                                         extraDetails: {
-                                          'Flat & Block': 'Flat ${b['flat_number']} (${b['block_name']})',
-                                          'Resident': b['resident_name'] ?? 'N/A',
-                                          'Billing Month': b['bill_month'] ?? '',
+                                          'Flat & Block':
+                                              'Flat ${b['flat_number']} (${b['block_name']})',
+                                          'Resident':
+                                              b['resident_name'] ?? 'N/A',
+                                          'Billing Month':
+                                              b['bill_month'] ?? '',
                                           'Due Date': b['due_date'] ?? '',
                                           'Payment Status': 'PAID',
                                         },
                                       );
-                                      FinancialDocumentHelper.downloadDocument(context, doc);
+                                      FinancialDocumentHelper.downloadDocument(
+                                        context,
+                                        doc,
+                                      );
                                     },
                                   ),
                                 ],
@@ -796,16 +1168,25 @@ class _SocietyIncomeTabState extends State<_SocietyIncomeTab> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Row(
             children: [
               CircleAvatar(
                 backgroundColor: Colors.teal.shade50,
                 radius: 18,
-                child: Icon(Icons.savings_outlined, color: Colors.teal.shade800, size: 20),
+                child: Icon(
+                  Icons.savings_outlined,
+                  color: Colors.teal.shade800,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 10),
-              const Text('Record Society Income', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text(
+                'Record Society Income',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
             ],
           ),
           content: SizedBox(
@@ -827,24 +1208,28 @@ class _SocietyIncomeTabState extends State<_SocietyIncomeTab> {
                     Wrap(
                       spacing: 6,
                       runSpacing: 4,
-                      children: [
-                        'Clubhouse Rent',
-                        'Tower Rent',
-                        'Scrap Sale',
-                        'Event Stall',
-                        'Solar Subsidy',
-                        'Penalty/Fine',
-                      ].map((cat) {
-                        return ActionChip(
-                          visualDensity: VisualDensity.compact,
-                          label: Text(cat, style: const TextStyle(fontSize: 11)),
-                          onPressed: () {
-                            setModalState(() {
-                              typeController.text = cat;
-                            });
-                          },
-                        );
-                      }).toList(),
+                      children:
+                          [
+                            'Clubhouse Rent',
+                            'Tower Rent',
+                            'Scrap Sale',
+                            'Event Stall',
+                            'Solar Subsidy',
+                            'Penalty/Fine',
+                          ].map((cat) {
+                            return ActionChip(
+                              visualDensity: VisualDensity.compact,
+                              label: Text(
+                                cat,
+                                style: const TextStyle(fontSize: 11),
+                              ),
+                              onPressed: () {
+                                setModalState(() {
+                                  typeController.text = cat;
+                                });
+                              },
+                            );
+                          }).toList(),
                     ),
                     const SizedBox(height: 12),
 
@@ -859,7 +1244,8 @@ class _SocietyIncomeTabState extends State<_SocietyIncomeTab> {
                       validator: (val) {
                         final v = val?.trim() ?? '';
                         if (v.isEmpty) return 'Please enter income source';
-                        if (v.length < 3) return 'Must be at least 3 characters';
+                        if (v.length < 3)
+                          return 'Must be at least 3 characters';
                         return null;
                       },
                     ),
@@ -867,9 +1253,13 @@ class _SocietyIncomeTabState extends State<_SocietyIncomeTab> {
 
                     TextFormField(
                       controller: amountController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'^\d+\.?\d{0,2}'),
+                        ),
                       ],
                       decoration: const InputDecoration(
                         labelText: 'Amount (₹) *',
@@ -882,7 +1272,8 @@ class _SocietyIncomeTabState extends State<_SocietyIncomeTab> {
                         final v = val?.trim() ?? '';
                         if (v.isEmpty) return 'Please enter amount';
                         final numVal = double.tryParse(v);
-                        if (numVal == null || numVal <= 0) return 'Enter a valid amount > 0';
+                        if (numVal == null || numVal <= 0)
+                          return 'Enter a valid amount > 0';
                         return null;
                       },
                     ),
@@ -906,7 +1297,9 @@ class _SocietyIncomeTabState extends State<_SocietyIncomeTab> {
                         );
                         if (picked != null) {
                           setModalState(() {
-                            dateController.text = picked.toIso8601String().substring(0, 10);
+                            dateController.text = picked
+                                .toIso8601String()
+                                .substring(0, 10);
                           });
                         }
                       },
@@ -918,7 +1311,8 @@ class _SocietyIncomeTabState extends State<_SocietyIncomeTab> {
                       maxLines: 2,
                       decoration: const InputDecoration(
                         labelText: 'Description / Remarks (Optional)',
-                        hintText: 'Payer name, receipt reference, or bank transaction details...',
+                        hintText:
+                            'Payer name, receipt reference, or bank transaction details...',
                         border: OutlineInputBorder(),
                       ),
                     ),
@@ -933,7 +1327,9 @@ class _SocietyIncomeTabState extends State<_SocietyIncomeTab> {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.teal.shade700),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal.shade700,
+              ),
               onPressed: isSubmitting
                   ? null
                   : () async {
@@ -952,7 +1348,9 @@ class _SocietyIncomeTabState extends State<_SocietyIncomeTab> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               backgroundColor: Colors.teal,
-                              content: Text('Society Income recorded successfully!'),
+                              content: Text(
+                                'Society Income recorded successfully!',
+                              ),
                             ),
                           );
                           _refresh();
@@ -960,13 +1358,31 @@ class _SocietyIncomeTabState extends State<_SocietyIncomeTab> {
                       } catch (e) {
                         setModalState(() => isSubmitting = false);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(backgroundColor: Colors.red, content: Text(e.toString().replaceAll('Exception: ', ''))),
+                          SnackBar(
+                            backgroundColor: Colors.red,
+                            content: Text(
+                              e.toString().replaceAll('Exception: ', ''),
+                            ),
+                          ),
                         );
                       }
                     },
               child: isSubmitting
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('Save Income', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Text(
+                      'Save Income',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
             ),
           ],
         ),
@@ -998,8 +1414,13 @@ class _SocietyIncomeTabState extends State<_SocietyIncomeTab> {
                             },
                           )
                         : null,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 12,
+                    ),
                     isDense: true,
                   ),
                   onChanged: (val) {
@@ -1012,12 +1433,20 @@ class _SocietyIncomeTabState extends State<_SocietyIncomeTab> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.teal.shade700,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 onPressed: _showAddIncomeDialog,
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text('Record Income', style: TextStyle(fontWeight: FontWeight.bold)),
+                label: const Text(
+                  'Record Income',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
@@ -1040,10 +1469,16 @@ class _SocietyIncomeTabState extends State<_SocietyIncomeTab> {
                 final allIncomes = snapshot.data ?? [];
                 final incomes = allIncomes.where((inc) {
                   if (_searchQuery.isEmpty) return true;
-                  final type = (inc['income_type'] ?? '').toString().toLowerCase();
-                  final desc = (inc['description'] ?? '').toString().toLowerCase();
+                  final type = (inc['income_type'] ?? '')
+                      .toString()
+                      .toLowerCase();
+                  final desc = (inc['description'] ?? '')
+                      .toString()
+                      .toLowerCase();
                   final amt = (inc['amount'] ?? '').toString().toLowerCase();
-                  return type.contains(_searchQuery) || desc.contains(_searchQuery) || amt.contains(_searchQuery);
+                  return type.contains(_searchQuery) ||
+                      desc.contains(_searchQuery) ||
+                      amt.contains(_searchQuery);
                 }).toList();
 
                 if (incomes.isEmpty) {
@@ -1051,13 +1486,20 @@ class _SocietyIncomeTabState extends State<_SocietyIncomeTab> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.savings_outlined, size: 56, color: Colors.grey.shade400),
+                        Icon(
+                          Icons.savings_outlined,
+                          size: 56,
+                          color: Colors.grey.shade400,
+                        ),
                         const SizedBox(height: 12),
                         Text(
                           _searchQuery.isNotEmpty
                               ? 'No incomes found matching "$_searchQuery"'
                               : 'No society income recorded yet.',
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
+                          ),
                         ),
                         const SizedBox(height: 14),
                         OutlinedButton.icon(
@@ -1080,12 +1522,18 @@ class _SocietyIncomeTabState extends State<_SocietyIncomeTab> {
                 }
 
                 return ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
                   children: [
                     // Summary Banner Card
                     Container(
                       margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [Colors.teal.shade800, Colors.teal.shade600],
@@ -1109,24 +1557,39 @@ class _SocietyIncomeTabState extends State<_SocietyIncomeTab> {
                             children: [
                               const Text(
                                 'Total Society Income Received',
-                                style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 '₹${totalIncomeSum.toStringAsFixed(2)}',
-                                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white24,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
                               '${allIncomes.length} Recorded',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                         ],
@@ -1135,9 +1598,12 @@ class _SocietyIncomeTabState extends State<_SocietyIncomeTab> {
 
                     // Incomes Items
                     ...incomes.map((inc) {
-                      final amountVal = (inc['amount'] is num
-                          ? inc['amount']
-                          : double.tryParse(inc['amount'].toString()) ?? 0.0).toDouble();
+                      final amountVal =
+                          (inc['amount'] is num
+                                  ? inc['amount']
+                                  : double.tryParse(inc['amount'].toString()) ??
+                                        0.0)
+                              .toDouble();
 
                       return Card(
                         margin: const EdgeInsets.only(bottom: 10),
@@ -1152,11 +1618,17 @@ class _SocietyIncomeTabState extends State<_SocietyIncomeTab> {
                             ListTile(
                               leading: CircleAvatar(
                                 backgroundColor: Colors.teal.shade50,
-                                child: Icon(Icons.savings_outlined, color: Colors.teal.shade700),
+                                child: Icon(
+                                  Icons.savings_outlined,
+                                  color: Colors.teal.shade700,
+                                ),
                               ),
                               title: Text(
                                 inc['income_type'] ?? 'Income',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
                               ),
                               subtitle: Text(
                                 '${inc['received_date'] ?? ''}${inc['description'] != null && inc['description'].toString().isNotEmpty ? ' • ${inc['description']}' : ''}',
@@ -1172,63 +1644,113 @@ class _SocietyIncomeTabState extends State<_SocietyIncomeTab> {
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.only(left: 14, right: 14, bottom: 8),
+                              padding: const EdgeInsets.only(
+                                left: 14,
+                                right: 14,
+                                bottom: 8,
+                              ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
                                   OutlinedButton.icon(
                                     style: OutlinedButton.styleFrom(
                                       visualDensity: VisualDensity.compact,
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 4,
+                                      ),
                                       foregroundColor: Colors.teal.shade800,
-                                      side: BorderSide(color: Colors.teal.shade200),
+                                      side: BorderSide(
+                                        color: Colors.teal.shade200,
+                                      ),
                                     ),
-                                    icon: const Icon(Icons.visibility_outlined, size: 14),
-                                    label: const Text('View Receipt', style: TextStyle(fontSize: 12)),
+                                    icon: const Icon(
+                                      Icons.visibility_outlined,
+                                      size: 14,
+                                    ),
+                                    label: const Text(
+                                      'View Receipt',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
                                     onPressed: () {
                                       final doc = FinancialDocument(
-                                        type: FinancialDocumentType.societyIncome,
-                                        docNumber: 'REC-INC-${inc['income_id'] ?? ''}',
+                                        type:
+                                            FinancialDocumentType.societyIncome,
+                                        docNumber:
+                                            'REC-INC-${inc['income_id'] ?? ''}',
                                         title: 'SOCIETY INCOME RECEIPT',
-                                        societyName: inc['society_name'] ?? 'Zenith Square Co-Op Housing Society Ltd.',
-                                        societyCity: inc['society_city'] ?? 'Ahmedabad, Gujarat',
-                                        categoryOrHead: inc['income_type'] ?? 'Society Income',
+                                        societyName:
+                                            inc['society_name'] ??
+                                            'Zenith Square Co-Op Housing Society Ltd.',
+                                        societyCity:
+                                            inc['society_city'] ??
+                                            'Ahmedabad, Gujarat',
+                                        categoryOrHead:
+                                            inc['income_type'] ??
+                                            'Society Income',
                                         amount: amountVal,
                                         date: inc['received_date'] ?? '',
                                         status: 'RECEIVED & CREDITED',
-                                        payerOrPayee: inc['income_type'] ?? 'Revenue Source',
+                                        payerOrPayee:
+                                            inc['income_type'] ??
+                                            'Revenue Source',
                                         paymentMethod: 'ONLINE / BANK / CASH',
                                         description: inc['description'] ?? '',
                                       );
-                                      FinancialDocumentHelper.viewDocument(context, doc);
+                                      FinancialDocumentHelper.viewDocument(
+                                        context,
+                                        doc,
+                                      );
                                     },
                                   ),
                                   const SizedBox(width: 8),
                                   ElevatedButton.icon(
                                     style: ElevatedButton.styleFrom(
                                       visualDensity: VisualDensity.compact,
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 4,
+                                      ),
                                       backgroundColor: Colors.teal.shade700,
                                       foregroundColor: Colors.white,
                                     ),
-                                    icon: const Icon(Icons.picture_as_pdf_outlined, size: 14),
-                                    label: const Text('Download PDF', style: TextStyle(fontSize: 12)),
+                                    icon: const Icon(
+                                      Icons.picture_as_pdf_outlined,
+                                      size: 14,
+                                    ),
+                                    label: const Text(
+                                      'Download PDF',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
                                     onPressed: () {
                                       final doc = FinancialDocument(
-                                        type: FinancialDocumentType.societyIncome,
-                                        docNumber: 'REC-INC-${inc['income_id'] ?? ''}',
+                                        type:
+                                            FinancialDocumentType.societyIncome,
+                                        docNumber:
+                                            'REC-INC-${inc['income_id'] ?? ''}',
                                         title: 'SOCIETY INCOME RECEIPT',
-                                        societyName: inc['society_name'] ?? 'Zenith Square Co-Op Housing Society Ltd.',
-                                        societyCity: inc['society_city'] ?? 'Ahmedabad, Gujarat',
-                                        categoryOrHead: inc['income_type'] ?? 'Society Income',
+                                        societyName:
+                                            inc['society_name'] ??
+                                            'Zenith Square Co-Op Housing Society Ltd.',
+                                        societyCity:
+                                            inc['society_city'] ??
+                                            'Ahmedabad, Gujarat',
+                                        categoryOrHead:
+                                            inc['income_type'] ??
+                                            'Society Income',
                                         amount: amountVal,
                                         date: inc['received_date'] ?? '',
                                         status: 'RECEIVED & CREDITED',
-                                        payerOrPayee: inc['income_type'] ?? 'Revenue Source',
+                                        payerOrPayee:
+                                            inc['income_type'] ??
+                                            'Revenue Source',
                                         paymentMethod: 'ONLINE / BANK / CASH',
                                         description: inc['description'] ?? '',
                                       );
-                                      FinancialDocumentHelper.downloadDocument(context, doc);
+                                      FinancialDocumentHelper.downloadDocument(
+                                        context,
+                                        doc,
+                                      );
                                     },
                                   ),
                                 ],
@@ -1256,7 +1778,8 @@ class _OfflineVerificationTab extends StatefulWidget {
   const _OfflineVerificationTab();
 
   @override
-  State<_OfflineVerificationTab> createState() => _OfflineVerificationTabState();
+  State<_OfflineVerificationTab> createState() =>
+      _OfflineVerificationTabState();
 }
 
 class _OfflineVerificationTabState extends State<_OfflineVerificationTab> {
@@ -1293,17 +1816,20 @@ class _OfflineVerificationTabState extends State<_OfflineVerificationTab> {
 
   void _verifyPayment(Map<String, dynamic> bill) {
     final residentName = (bill['resident_name'] ?? '').toString().trim();
-    final isAssigned = (bill['is_assigned'] == true) ||
+    final isAssigned =
+        (bill['is_assigned'] == true) ||
         (residentName.isNotEmpty &&
-         residentName.toLowerCase() != 'unassigned' &&
-         residentName.toLowerCase() != 'resident');
+            residentName.toLowerCase() != 'unassigned' &&
+            residentName.toLowerCase() != 'resident');
 
     if (!isAssigned) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
-          content: Text('Cannot verify payment: Flat is unassigned. Please assign a resident to this flat first.'),
+          content: Text(
+            'Cannot verify payment: Flat is unassigned. Please assign a resident to this flat first.',
+          ),
         ),
       );
       return;
@@ -1316,7 +1842,9 @@ class _OfflineVerificationTabState extends State<_OfflineVerificationTab> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Text('Settle Bill: Flat ${bill['flat_number']}'),
           content: SizedBox(
             width: 420,
@@ -1324,32 +1852,88 @@ class _OfflineVerificationTabState extends State<_OfflineVerificationTab> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Resident: ${bill['resident_name']}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  'Resident: ${bill['resident_name']}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
                 Text('Month: ${bill['bill_month']}'),
-                Text('Payable: ₹${bill['payable_amount']}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blueAccent)),
+                Text(
+                  'Payable: ₹${bill['payable_amount']}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueAccent,
+                  ),
+                ),
                 const Divider(height: 24),
-                const Text('Payment Mode Received:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                const Text(
+                  'Payment Mode Received:',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   isExpanded: true,
                   initialValue: selectedMethod,
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
                   ),
                   selectedItemBuilder: (BuildContext context) {
                     return const [
-                      Text('Cash Received', overflow: TextOverflow.ellipsis, maxLines: 1),
-                      Text('Bank Cheque', overflow: TextOverflow.ellipsis, maxLines: 1),
-                      Text('NEFT / RTGS Transfer', overflow: TextOverflow.ellipsis, maxLines: 1),
-                      Text('Direct UPI Settlement', overflow: TextOverflow.ellipsis, maxLines: 1),
+                      Text(
+                        'Cash Received',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                      Text(
+                        'Bank Cheque',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                      Text(
+                        'NEFT / RTGS Transfer',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                      Text(
+                        'Direct UPI Settlement',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
                     ];
                   },
                   items: const [
-                    DropdownMenuItem(value: 'CASH', child: Text('Cash Received', overflow: TextOverflow.ellipsis)),
-                    DropdownMenuItem(value: 'CHEQUE', child: Text('Bank Cheque', overflow: TextOverflow.ellipsis)),
-                    DropdownMenuItem(value: 'BANK_TRANSFER', child: Text('NEFT / RTGS Transfer', overflow: TextOverflow.ellipsis)),
-                    DropdownMenuItem(value: 'UPI', child: Text('Direct UPI Settlement', overflow: TextOverflow.ellipsis)),
+                    DropdownMenuItem(
+                      value: 'CASH',
+                      child: Text(
+                        'Cash Received',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'CHEQUE',
+                      child: Text(
+                        'Bank Cheque',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'BANK_TRANSFER',
+                      child: Text(
+                        'NEFT / RTGS Transfer',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'UPI',
+                      child: Text(
+                        'Direct UPI Settlement',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                   onChanged: (val) {
                     if (val != null) setModalState(() => selectedMethod = val);
@@ -1370,16 +1954,20 @@ class _OfflineVerificationTabState extends State<_OfflineVerificationTab> {
                   : () async {
                       setModalState(() => isSubmitting = true);
                       try {
-                        final res = await FinanceApiService.recordOfflinePayment(
-                          billId: bill['bill_id'],
-                          paymentMethod: selectedMethod,
-                        );
+                        final res =
+                            await FinanceApiService.recordOfflinePayment(
+                              billId: bill['bill_id'],
+                              paymentMethod: selectedMethod,
+                            );
                         if (mounted) {
                           Navigator.pop(ctx);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               backgroundColor: Colors.green,
-                              content: Text(res['message'] ?? 'Payment verified successfully!'),
+                              content: Text(
+                                res['message'] ??
+                                    'Payment verified successfully!',
+                              ),
                             ),
                           );
                           _refresh();
@@ -1389,14 +1977,26 @@ class _OfflineVerificationTabState extends State<_OfflineVerificationTab> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             backgroundColor: Colors.red,
-                            content: Text(e.toString().replaceAll('Exception: ', '')),
+                            content: Text(
+                              e.toString().replaceAll('Exception: ', ''),
+                            ),
                           ),
                         );
                       }
                     },
               child: isSubmitting
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('Mark Paid & Issue Receipt', style: TextStyle(color: Colors.white)),
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Text(
+                      'Mark Paid & Issue Receipt',
+                      style: TextStyle(color: Colors.white),
+                    ),
             ),
           ],
         ),
@@ -1424,8 +2024,13 @@ class _OfflineVerificationTabState extends State<_OfflineVerificationTab> {
                       },
                     )
                   : null,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 10,
+                horizontal: 12,
+              ),
               isDense: true,
             ),
             onChanged: (val) {
@@ -1449,20 +2054,30 @@ class _OfflineVerificationTabState extends State<_OfflineVerificationTab> {
                 final allPending = snapshot.data ?? [];
                 final pending = allPending.where((b) {
                   if (_searchQuery.isNotEmpty) {
-                    final resident = (b['resident_name'] ?? '').toString().toLowerCase();
-                    final flat = (b['flat_number'] ?? '').toString().toLowerCase();
-                    final block = (b['block_name'] ?? '').toString().toLowerCase();
-                    final fullCardText = 'flat $flat ($block) - $resident'.toLowerCase();
+                    final resident = (b['resident_name'] ?? '')
+                        .toString()
+                        .toLowerCase();
+                    final flat = (b['flat_number'] ?? '')
+                        .toString()
+                        .toLowerCase();
+                    final block = (b['block_name'] ?? '')
+                        .toString()
+                        .toLowerCase();
+                    final fullCardText = 'flat $flat ($block) - $resident'
+                        .toLowerCase();
                     final combined = '$flat ($block)'.toLowerCase();
                     final combined2 = '$block-$flat'.toLowerCase();
 
-                    final allResidents = (b['all_residents'] as List<dynamic>?)
+                    final allResidents =
+                        (b['all_residents'] as List<dynamic>?)
                             ?.map((e) => e.toString().toLowerCase())
                             .toList() ??
                         [];
-                    final matchesResident = resident.contains(_searchQuery) ||
+                    final matchesResident =
+                        resident.contains(_searchQuery) ||
                         allResidents.any((r) => r.contains(_searchQuery));
-                    final matchesFlat = flat.contains(_searchQuery) ||
+                    final matchesFlat =
+                        flat.contains(_searchQuery) ||
                         fullCardText.contains(_searchQuery) ||
                         combined.contains(_searchQuery) ||
                         combined2.contains(_searchQuery);
@@ -1478,8 +2093,12 @@ class _OfflineVerificationTabState extends State<_OfflineVerificationTab> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          _searchQuery.isNotEmpty ? Icons.search_off : Icons.check_circle_outline,
-                          color: _searchQuery.isNotEmpty ? Colors.grey.shade400 : Colors.green,
+                          _searchQuery.isNotEmpty
+                              ? Icons.search_off
+                              : Icons.check_circle_outline,
+                          color: _searchQuery.isNotEmpty
+                              ? Colors.grey.shade400
+                              : Colors.green,
                           size: 48,
                         ),
                         const SizedBox(height: 12),
@@ -1500,18 +2119,27 @@ class _OfflineVerificationTabState extends State<_OfflineVerificationTab> {
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final b = pending[index];
-                    final residentName = (b['resident_name'] ?? '').toString().trim();
-                    final isAssigned = (b['is_assigned'] == true) ||
+                    final residentName = (b['resident_name'] ?? '')
+                        .toString()
+                        .trim();
+                    final isAssigned =
+                        (b['is_assigned'] == true) ||
                         (residentName.isNotEmpty &&
-                         residentName.toLowerCase() != 'unassigned' &&
-                         residentName.toLowerCase() != 'resident');
+                            residentName.toLowerCase() != 'unassigned' &&
+                            residentName.toLowerCase() != 'resident');
 
                     final amountNum = isAssigned
                         ? (b['payable_amount'] is num
-                            ? b['payable_amount']
-                            : (double.tryParse(b['payable_amount'].toString()) ?? 0))
+                              ? b['payable_amount']
+                              : (double.tryParse(
+                                      b['payable_amount'].toString(),
+                                    ) ??
+                                    0))
                         : 0;
-                    final amountStr = (amountNum is int || (amountNum is double && amountNum == amountNum.roundToDouble()))
+                    final amountStr =
+                        (amountNum is int ||
+                            (amountNum is double &&
+                                amountNum == amountNum.roundToDouble()))
                         ? amountNum.toInt().toString()
                         : amountNum.toStringAsFixed(2);
 
@@ -1519,20 +2147,30 @@ class _OfflineVerificationTabState extends State<_OfflineVerificationTab> {
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
-                        side: BorderSide(color: isAssigned ? Colors.grey.shade300 : Colors.grey.shade200),
+                        side: BorderSide(
+                          color: isAssigned
+                              ? Colors.grey.shade300
+                              : Colors.grey.shade200,
+                        ),
                       ),
-                      color: isAssigned ? Colors.white : const Color(0xFFFAFAFA),
+                      color: isAssigned
+                          ? Colors.white
+                          : const Color(0xFFFAFAFA),
                       child: Padding(
                         padding: const EdgeInsets.all(12),
                         child: Row(
                           children: [
                             CircleAvatar(
-                              backgroundColor: isAssigned ? Colors.orange.shade50 : Colors.grey.shade200,
+                              backgroundColor: isAssigned
+                                  ? Colors.orange.shade50
+                                  : Colors.grey.shade200,
                               child: Text(
                                 b['flat_number'] ?? '',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: isAssigned ? Colors.orange.shade900 : Colors.grey.shade600,
+                                  color: isAssigned
+                                      ? Colors.orange.shade900
+                                      : Colors.grey.shade600,
                                   fontSize: 12,
                                 ),
                               ),
@@ -1545,37 +2183,58 @@ class _OfflineVerificationTabState extends State<_OfflineVerificationTab> {
                                   Row(
                                     children: [
                                       Text(
-                                        isAssigned ? residentName : 'Unassigned',
+                                        isAssigned
+                                            ? residentName
+                                            : 'Unassigned',
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 14,
-                                          color: isAssigned ? Colors.black87 : Colors.grey.shade700,
+                                          color: isAssigned
+                                              ? Colors.black87
+                                              : Colors.grey.shade700,
                                         ),
                                       ),
                                       if (!isAssigned) ...[
                                         const SizedBox(width: 6),
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
                                           decoration: BoxDecoration(
                                             color: Colors.grey.shade200,
-                                            borderRadius: BorderRadius.circular(4),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
                                           ),
                                           child: Text(
                                             'No Resident',
-                                            style: TextStyle(fontSize: 10, color: Colors.grey.shade700, fontWeight: FontWeight.w500),
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.grey.shade700,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
                                         ),
                                       ],
                                     ],
                                   ),
                                   const SizedBox(height: 2),
-                                  Text('${b['bill_month']} • Due: ${b['due_date']}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                                  Text(
+                                    '${b['bill_month']} • Due: ${b['due_date']}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
                                   const SizedBox(height: 2),
                                   Text(
                                     'Amount: ₹$amountStr',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: isAssigned ? Colors.blueAccent : Colors.grey.shade500,
+                                      color: isAssigned
+                                          ? Colors.blueAccent
+                                          : Colors.grey.shade500,
                                       fontSize: 13,
                                     ),
                                   ),
@@ -1584,18 +2243,29 @@ class _OfflineVerificationTabState extends State<_OfflineVerificationTab> {
                             ),
                             ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: isAssigned ? Colors.teal : Colors.grey.shade300,
+                                backgroundColor: isAssigned
+                                    ? Colors.teal
+                                    : Colors.grey.shade300,
                                 disabledBackgroundColor: Colors.grey.shade300,
                                 disabledForegroundColor: Colors.grey.shade500,
                                 elevation: isAssigned ? 1 : 0,
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
                               ),
-                              onPressed: isAssigned ? () => _verifyPayment(b) : null,
+                              onPressed: isAssigned
+                                  ? () => _verifyPayment(b)
+                                  : null,
                               child: Text(
                                 'Verify',
                                 style: TextStyle(
-                                  color: isAssigned ? Colors.white : Colors.grey.shade500,
+                                  color: isAssigned
+                                      ? Colors.white
+                                      : Colors.grey.shade500,
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -1623,7 +2293,8 @@ class _ExpensesAndUtilitiesTab extends StatefulWidget {
   const _ExpensesAndUtilitiesTab();
 
   @override
-  State<_ExpensesAndUtilitiesTab> createState() => _ExpensesAndUtilitiesTabState();
+  State<_ExpensesAndUtilitiesTab> createState() =>
+      _ExpensesAndUtilitiesTabState();
 }
 
 class _ExpensesAndUtilitiesTabState extends State<_ExpensesAndUtilitiesTab> {
@@ -1646,14 +2317,18 @@ class _ExpensesAndUtilitiesTabState extends State<_ExpensesAndUtilitiesTab> {
     final typeController = TextEditingController(text: 'Electricity');
     final amountController = TextEditingController();
     final descController = TextEditingController();
-    final dateController = TextEditingController(text: DateTime.now().toString().substring(0, 10));
+    final dateController = TextEditingController(
+      text: DateTime.now().toString().substring(0, 10),
+    );
     bool isSubmitting = false;
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: const Text('Record Expense / Utility Bill'),
           content: SizedBox(
             width: 440,
@@ -1668,51 +2343,156 @@ class _ExpensesAndUtilitiesTabState extends State<_ExpensesAndUtilitiesTab> {
                     decoration: const InputDecoration(
                       labelText: 'Expense Category / Utility',
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
                     ),
                     selectedItemBuilder: (BuildContext context) {
                       return const [
-                        Text('Electricity Bill (Torrent/Adani)', overflow: TextOverflow.ellipsis, maxLines: 1),
-                        Text('Water Supply & Tanker', overflow: TextOverflow.ellipsis, maxLines: 1),
-                        Text('Generator Fuel / Diesel', overflow: TextOverflow.ellipsis, maxLines: 1),
-                        Text('Security Agency Monthly Fee', overflow: TextOverflow.ellipsis, maxLines: 1),
-                        Text('Housekeeping & Cleaning', overflow: TextOverflow.ellipsis, maxLines: 1),
-                        Text('Elevator AMC / Repair', overflow: TextOverflow.ellipsis, maxLines: 1),
-                        Text('Plumbing & Common Repairs', overflow: TextOverflow.ellipsis, maxLines: 1),
-                        Text('Gardening & Landscaping', overflow: TextOverflow.ellipsis, maxLines: 1),
-                        Text('Other Society Operations', overflow: TextOverflow.ellipsis, maxLines: 1),
+                        Text(
+                          'Electricity Bill (Torrent/Adani)',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                        Text(
+                          'Water Supply & Tanker',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                        Text(
+                          'Generator Fuel / Diesel',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                        Text(
+                          'Security Agency Monthly Fee',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                        Text(
+                          'Housekeeping & Cleaning',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                        Text(
+                          'Elevator AMC / Repair',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                        Text(
+                          'Plumbing & Common Repairs',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                        Text(
+                          'Gardening & Landscaping',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                        Text(
+                          'Other Society Operations',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
                       ];
                     },
                     items: const [
-                      DropdownMenuItem(value: 'Electricity', child: Text('Electricity Bill (Torrent/Adani)', overflow: TextOverflow.ellipsis)),
-                      DropdownMenuItem(value: 'Water Supply', child: Text('Water Supply & Tanker', overflow: TextOverflow.ellipsis)),
-                      DropdownMenuItem(value: 'Generator Fuel', child: Text('Generator Fuel / Diesel', overflow: TextOverflow.ellipsis)),
-                      DropdownMenuItem(value: 'Security Agency', child: Text('Security Agency Monthly Fee', overflow: TextOverflow.ellipsis)),
-                      DropdownMenuItem(value: 'Housekeeping', child: Text('Housekeeping & Cleaning', overflow: TextOverflow.ellipsis)),
-                      DropdownMenuItem(value: 'Elevator Maintenance', child: Text('Elevator AMC / Repair', overflow: TextOverflow.ellipsis)),
-                      DropdownMenuItem(value: 'Plumbing & Repairs', child: Text('Plumbing & Common Repairs', overflow: TextOverflow.ellipsis)),
-                      DropdownMenuItem(value: 'Gardening', child: Text('Gardening & Landscaping', overflow: TextOverflow.ellipsis)),
-                      DropdownMenuItem(value: 'Other Operations', child: Text('Other Society Operations', overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(
+                        value: 'Electricity',
+                        child: Text(
+                          'Electricity Bill (Torrent/Adani)',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Water Supply',
+                        child: Text(
+                          'Water Supply & Tanker',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Generator Fuel',
+                        child: Text(
+                          'Generator Fuel / Diesel',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Security Agency',
+                        child: Text(
+                          'Security Agency Monthly Fee',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Housekeeping',
+                        child: Text(
+                          'Housekeeping & Cleaning',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Elevator Maintenance',
+                        child: Text(
+                          'Elevator AMC / Repair',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Plumbing & Repairs',
+                        child: Text(
+                          'Plumbing & Common Repairs',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Gardening',
+                        child: Text(
+                          'Gardening & Landscaping',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Other Operations',
+                        child: Text(
+                          'Other Society Operations',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ],
                     onChanged: (val) {
-                      if (val != null) setModalState(() => typeController.text = val);
+                      if (val != null)
+                        setModalState(() => typeController.text = val);
                     },
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: amountController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(labelText: 'Amount (₹)', border: OutlineInputBorder()),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Amount (₹)',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: dateController,
-                    decoration: const InputDecoration(labelText: 'Payment Date (YYYY-MM-DD)', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                      labelText: 'Payment Date (YYYY-MM-DD)',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: descController,
-                    decoration: const InputDecoration(labelText: 'Notes / Invoice Ref No.', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                      labelText: 'Notes / Invoice Ref No.',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                 ],
               ),
@@ -1724,7 +2504,9 @@ class _ExpensesAndUtilitiesTabState extends State<_ExpensesAndUtilitiesTab> {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+              ),
               onPressed: isSubmitting
                   ? null
                   : () async {
@@ -1742,7 +2524,9 @@ class _ExpensesAndUtilitiesTabState extends State<_ExpensesAndUtilitiesTab> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               backgroundColor: Colors.green,
-                              content: Text('Expense / Utility bill recorded successfully!'),
+                              content: Text(
+                                'Expense / Utility bill recorded successfully!',
+                              ),
                             ),
                           );
                           _refresh();
@@ -1750,13 +2534,26 @@ class _ExpensesAndUtilitiesTabState extends State<_ExpensesAndUtilitiesTab> {
                       } catch (e) {
                         setModalState(() => isSubmitting = false);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(backgroundColor: Colors.red, content: Text(e.toString())),
+                          SnackBar(
+                            backgroundColor: Colors.red,
+                            content: Text(e.toString()),
+                          ),
                         );
                       }
                     },
               child: isSubmitting
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('Save Expense', style: TextStyle(color: Colors.white)),
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Text(
+                      'Save Expense',
+                      style: TextStyle(color: Colors.white),
+                    ),
             ),
           ],
         ),
@@ -1773,9 +2570,15 @@ class _ExpensesAndUtilitiesTabState extends State<_ExpensesAndUtilitiesTab> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Society Expense Ledger', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const Text(
+                'Society Expense Ledger',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
               ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                ),
                 onPressed: _showAddExpenseDialog,
                 icon: const Icon(Icons.add, size: 16),
                 label: const Text('Add Expense'),
@@ -1802,14 +2605,20 @@ class _ExpensesAndUtilitiesTabState extends State<_ExpensesAndUtilitiesTab> {
                 }
 
                 return ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   itemCount: expenses.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final e = expenses[index];
-                    final amountVal = (e['amount'] is num
-                        ? e['amount']
-                        : double.tryParse(e['amount'].toString()) ?? 0.0).toDouble();
+                    final amountVal =
+                        (e['amount'] is num
+                                ? e['amount']
+                                : double.tryParse(e['amount'].toString()) ??
+                                      0.0)
+                            .toDouble();
 
                     return Card(
                       elevation: 0,
@@ -1823,73 +2632,136 @@ class _ExpensesAndUtilitiesTabState extends State<_ExpensesAndUtilitiesTab> {
                           ListTile(
                             leading: CircleAvatar(
                               backgroundColor: Colors.red.shade50,
-                              child: Icon(Icons.receipt_outlined, color: Colors.red.shade700),
+                              child: Icon(
+                                Icons.receipt_outlined,
+                                color: Colors.red.shade700,
+                              ),
                             ),
-                            title: Text(e['expense_type'] ?? 'Expense', style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text('${e['payment_date']} • ${e['description'] ?? ''}', style: const TextStyle(fontSize: 12)),
+                            title: Text(
+                              e['expense_type'] ?? 'Expense',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Text(
+                              '${e['payment_date']} • ${e['description'] ?? ''}',
+                              style: const TextStyle(fontSize: 12),
+                            ),
                             trailing: Text(
                               '-₹${amountVal.toStringAsFixed(2)}',
-                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red.shade700, fontSize: 15),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red.shade700,
+                                fontSize: 15,
+                              ),
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.only(left: 14, right: 14, bottom: 8),
+                            padding: const EdgeInsets.only(
+                              left: 14,
+                              right: 14,
+                              bottom: 8,
+                            ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
                                 OutlinedButton.icon(
                                   style: OutlinedButton.styleFrom(
                                     visualDensity: VisualDensity.compact,
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
                                     foregroundColor: Colors.red.shade800,
-                                    side: BorderSide(color: Colors.red.shade200),
+                                    side: BorderSide(
+                                      color: Colors.red.shade200,
+                                    ),
                                   ),
-                                  icon: const Icon(Icons.visibility_outlined, size: 14),
-                                  label: const Text('View Voucher', style: TextStyle(fontSize: 12)),
+                                  icon: const Icon(
+                                    Icons.visibility_outlined,
+                                    size: 14,
+                                  ),
+                                  label: const Text(
+                                    'View Voucher',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
                                   onPressed: () {
                                     final doc = FinancialDocument(
-                                      type: FinancialDocumentType.societyExpense,
-                                      docNumber: 'VOU-EXP-${e['expense_id'] ?? ''}',
+                                      type:
+                                          FinancialDocumentType.societyExpense,
+                                      docNumber:
+                                          'VOU-EXP-${e['expense_id'] ?? ''}',
                                       title: 'EXPENSE PAYMENT VOUCHER',
-                                      societyName: e['society_name'] ?? 'Zenith Square Co-Op Housing Society Ltd.',
-                                      societyCity: e['society_city'] ?? 'Ahmedabad, Gujarat',
-                                      categoryOrHead: e['expense_type'] ?? 'General Expense',
+                                      societyName:
+                                          e['society_name'] ??
+                                          'Zenith Square Co-Op Housing Society Ltd.',
+                                      societyCity:
+                                          e['society_city'] ??
+                                          'Ahmedabad, Gujarat',
+                                      categoryOrHead:
+                                          e['expense_type'] ??
+                                          'General Expense',
                                       amount: amountVal,
                                       date: e['payment_date'] ?? '',
                                       status: 'PAID & SETTLED',
-                                      payerOrPayee: 'Zenith Square Society Treasury',
+                                      payerOrPayee:
+                                          'Zenith Square Society Treasury',
                                       paymentMethod: 'TREASURY DISBURSEMENT',
                                       description: e['description'] ?? '',
                                     );
-                                    FinancialDocumentHelper.viewDocument(context, doc);
+                                    FinancialDocumentHelper.viewDocument(
+                                      context,
+                                      doc,
+                                    );
                                   },
                                 ),
                                 const SizedBox(width: 8),
                                 ElevatedButton.icon(
                                   style: ElevatedButton.styleFrom(
                                     visualDensity: VisualDensity.compact,
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
                                     backgroundColor: Colors.red.shade700,
                                     foregroundColor: Colors.white,
                                   ),
-                                  icon: const Icon(Icons.picture_as_pdf_outlined, size: 14),
-                                  label: const Text('Download PDF', style: TextStyle(fontSize: 12)),
+                                  icon: const Icon(
+                                    Icons.picture_as_pdf_outlined,
+                                    size: 14,
+                                  ),
+                                  label: const Text(
+                                    'Download PDF',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
                                   onPressed: () {
                                     final doc = FinancialDocument(
-                                      type: FinancialDocumentType.societyExpense,
-                                      docNumber: 'VOU-EXP-${e['expense_id'] ?? ''}',
+                                      type:
+                                          FinancialDocumentType.societyExpense,
+                                      docNumber:
+                                          'VOU-EXP-${e['expense_id'] ?? ''}',
                                       title: 'EXPENSE PAYMENT VOUCHER',
-                                      societyName: e['society_name'] ?? 'Zenith Square Co-Op Housing Society Ltd.',
-                                      societyCity: e['society_city'] ?? 'Ahmedabad, Gujarat',
-                                      categoryOrHead: e['expense_type'] ?? 'General Expense',
+                                      societyName:
+                                          e['society_name'] ??
+                                          'Zenith Square Co-Op Housing Society Ltd.',
+                                      societyCity:
+                                          e['society_city'] ??
+                                          'Ahmedabad, Gujarat',
+                                      categoryOrHead:
+                                          e['expense_type'] ??
+                                          'General Expense',
                                       amount: amountVal,
                                       date: e['payment_date'] ?? '',
                                       status: 'PAID & SETTLED',
-                                      payerOrPayee: 'Zenith Square Society Treasury',
+                                      payerOrPayee:
+                                          'Zenith Square Society Treasury',
                                       paymentMethod: 'TREASURY DISBURSEMENT',
                                       description: e['description'] ?? '',
                                     );
-                                    FinancialDocumentHelper.downloadDocument(context, doc);
+                                    FinancialDocumentHelper.downloadDocument(
+                                      context,
+                                      doc,
+                                    );
                                   },
                                 ),
                               ],
@@ -1951,7 +2823,9 @@ class _PaymentReceiptsTabState extends State<_PaymentReceiptsTab> {
 
           final receipts = snapshot.data ?? [];
           if (receipts.isEmpty) {
-            return const Center(child: Text('No payment receipts generated yet.'));
+            return const Center(
+              child: Text('No payment receipts generated yet.'),
+            );
           }
 
           return ListView.separated(
@@ -1960,9 +2834,11 @@ class _PaymentReceiptsTabState extends State<_PaymentReceiptsTab> {
             separatorBuilder: (_, __) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               final r = receipts[index];
-              final amountVal = (r['amount'] is num
-                  ? r['amount']
-                  : double.tryParse(r['amount'].toString()) ?? 0.0).toDouble();
+              final amountVal =
+                  (r['amount'] is num
+                          ? r['amount']
+                          : double.tryParse(r['amount'].toString()) ?? 0.0)
+                      .toDouble();
 
               return Card(
                 elevation: 0,
@@ -1978,81 +2854,90 @@ class _PaymentReceiptsTabState extends State<_PaymentReceiptsTab> {
                         backgroundColor: Colors.teal,
                         child: Icon(Icons.receipt, color: Colors.white),
                       ),
-                      title: Text(r['receipt_number'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      subtitle: Text('Flat ${r['flat_number']} • ${r['resident_name']} • ${r['payment_method']}', style: const TextStyle(fontSize: 12)),
+                      title: Text(
+                        r['receipt_number'] ?? '',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Payer: ${r['payer_name'] ?? r['resident_name'] ?? '—'} • Flat ${r['flat_number'] ?? '—'} • ${r['payment_method'] ?? '—'}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
                       trailing: Text(
                         '₹${amountVal.toStringAsFixed(2)}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 15),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                          fontSize: 15,
+                        ),
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(left: 14, right: 14, bottom: 8),
+                      padding: const EdgeInsets.only(
+                        left: 14,
+                        right: 14,
+                        bottom: 8,
+                      ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           OutlinedButton.icon(
                             style: OutlinedButton.styleFrom(
                               visualDensity: VisualDensity.compact,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                               foregroundColor: Colors.teal.shade800,
                               side: BorderSide(color: Colors.teal.shade200),
                             ),
-                            icon: const Icon(Icons.visibility_outlined, size: 14),
-                            label: const Text('View Receipt', style: TextStyle(fontSize: 12)),
+                            icon: const Icon(
+                              Icons.visibility_outlined,
+                              size: 14,
+                            ),
+                            label: const Text(
+                              'View Receipt',
+                              style: TextStyle(fontSize: 12),
+                            ),
                             onPressed: () {
-                              final doc = FinancialDocument(
-                                type: FinancialDocumentType.paymentReceipt,
-                                docNumber: r['receipt_number'] ?? 'REC-${r['receipt_id']}',
-                                title: 'MAINTENANCE PAYMENT RECEIPT',
-                                societyName: r['society_name'] ?? 'Zenith Square Co-Op Housing Society Ltd.',
-                                societyCity: r['society_city'] ?? 'Ahmedabad, Gujarat',
-                                categoryOrHead: 'Maintenance Charges (${r['bill_month'] ?? 'Monthly'})',
-                                amount: amountVal,
-                                date: r['generated_at'] ?? '',
-                                status: 'COMPLETED & VERIFIED',
-                                payerOrPayee: '${r['resident_name']} (Flat ${r['flat_number']})',
-                                paymentMethod: r['payment_method'] ?? 'ONLINE',
-                                extraDetails: {
-                                  'Flat Number': 'Flat ${r['flat_number']}',
-                                  'Resident Name': r['resident_name'] ?? 'N/A',
-                                  'Billing Cycle': r['bill_month'] ?? '',
-                                  'Payment ID': r['payment_id'] ?? '',
-                                },
+                              final doc = FinancialDocument.fromPaymentReceipt(
+                                Map<String, dynamic>.from(r as Map),
                               );
-                              FinancialDocumentHelper.viewDocument(context, doc);
+                              FinancialDocumentHelper.viewDocument(
+                                context,
+                                doc,
+                              );
                             },
                           ),
                           const SizedBox(width: 8),
                           ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
                               visualDensity: VisualDensity.compact,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                               backgroundColor: Colors.teal.shade700,
                               foregroundColor: Colors.white,
                             ),
-                            icon: const Icon(Icons.picture_as_pdf_outlined, size: 14),
-                            label: const Text('Download PDF', style: TextStyle(fontSize: 12)),
+                            icon: const Icon(
+                              Icons.picture_as_pdf_outlined,
+                              size: 14,
+                            ),
+                            label: const Text(
+                              'Download PDF',
+                              style: TextStyle(fontSize: 12),
+                            ),
                             onPressed: () {
-                              final doc = FinancialDocument(
-                                type: FinancialDocumentType.paymentReceipt,
-                                docNumber: r['receipt_number'] ?? 'REC-${r['receipt_id']}',
-                                title: 'MAINTENANCE PAYMENT RECEIPT',
-                                societyName: r['society_name'] ?? 'Zenith Square Co-Op Housing Society Ltd.',
-                                societyCity: r['society_city'] ?? 'Ahmedabad, Gujarat',
-                                categoryOrHead: 'Maintenance Charges (${r['bill_month'] ?? 'Monthly'})',
-                                amount: amountVal,
-                                date: r['generated_at'] ?? '',
-                                status: 'COMPLETED & VERIFIED',
-                                payerOrPayee: '${r['resident_name']} (Flat ${r['flat_number']})',
-                                paymentMethod: r['payment_method'] ?? 'ONLINE',
-                                extraDetails: {
-                                  'Flat Number': 'Flat ${r['flat_number']}',
-                                  'Resident Name': r['resident_name'] ?? 'N/A',
-                                  'Billing Cycle': r['bill_month'] ?? '',
-                                  'Payment ID': r['payment_id'] ?? '',
-                                },
+                              final doc = FinancialDocument.fromPaymentReceipt(
+                                Map<String, dynamic>.from(r as Map),
                               );
-                              FinancialDocumentHelper.downloadDocument(context, doc);
+                              FinancialDocumentHelper.downloadDocument(
+                                context,
+                                doc,
+                              );
                             },
                           ),
                         ],
@@ -2081,11 +2966,55 @@ class _BankDetailsTab extends StatefulWidget {
 
 class _BankDetailsTabState extends State<_BankDetailsTab> {
   late Future<Map<String, dynamic>> _bankFuture;
+  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
     _bankFuture = FinanceApiService.fetchBankDetails();
+  }
+
+  void _reloadBankDetails() {
+    setState(() {
+      _bankFuture = FinanceApiService.fetchBankDetails();
+    });
+  }
+
+  Future<void> _showBankDetailsForm(Map<String, dynamic> current) async {
+    final values = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (_) => _BankDetailsFormDialog(initialDetails: current),
+    );
+
+    if (values == null || !mounted) return;
+    setState(() => _isSaving = true);
+    try {
+      await FinanceApiService.saveBankDetails(
+        accountName: values['account_name']!,
+        bankName: values['bank_name']!,
+        accountNumber: values['account_number']!,
+        ifscCode: values['ifsc_code']!,
+        branch: values['branch']!,
+        upiId: values['upi_id']!,
+      );
+      if (!mounted) return;
+      setState(() {
+        _isSaving = false;
+        _bankFuture = FinanceApiService.fetchBankDetails();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Society bank details saved.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    }
   }
 
   @override
@@ -2097,8 +3026,31 @@ class _BankDetailsTabState extends State<_BankDetailsTab> {
           return const Center(child: CircularProgressIndicator());
         }
 
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  snapshot.error.toString().replaceFirst('Exception: ', ''),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _reloadBankDetails,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+
         final b = snapshot.data ?? {};
+        final configured = b['configured'] == true;
+        final standardRate = b['standard_rate']?.toString() ?? '—';
         return ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           children: [
             Card(
@@ -2115,31 +3067,108 @@ class _BankDetailsTabState extends State<_BankDetailsTab> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.account_balance, color: Colors.blue.shade900),
+                        Icon(
+                          Icons.account_balance,
+                          color: Colors.blue.shade900,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'Official Society Bank Account',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue.shade900),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.blue.shade900,
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 6),
-                    const Text(
-                      'This account information is shared with residents for NEFT/RTGS and UPI maintenance dues.',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    Text(
+                      configured
+                          ? 'This account information is shared with residents for maintenance payments.'
+                          : 'Add the society bank account that residents should use for maintenance payments.',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            _detailTile(Icons.business, 'Account Name', b['account_name'] ?? 'Society Fund'),
-            _detailTile(Icons.account_balance, 'Bank Name', b['bank_name'] ?? 'HDFC Bank Ltd'),
-            _detailTile(Icons.numbers, 'Account Number', b['account_number'] ?? '5010098273641'),
-            _detailTile(Icons.vpn_key, 'IFSC Code', b['ifsc_code'] ?? 'HDFC0001890'),
-            _detailTile(Icons.location_on, 'Branch', b['branch'] ?? 'Main Branch'),
-            _detailTile(Icons.qr_code, 'UPI ID', b['upi_id'] ?? 'society@hdfcbank'),
-            _detailTile(Icons.currency_rupee, 'Standard Monthly Rate', '₹${b['standard_rate'] ?? 0.0} / unit'),
+            if (configured) ...[
+              _detailTile(
+                Icons.business,
+                'Account Name',
+                b['account_name']?.toString() ?? '',
+              ),
+              _detailTile(
+                Icons.account_balance,
+                'Bank Name',
+                b['bank_name']?.toString() ?? '',
+              ),
+              _detailTile(
+                Icons.numbers,
+                'Account Number',
+                b['account_number']?.toString() ?? '',
+              ),
+              _detailTile(
+                Icons.vpn_key,
+                'IFSC Code',
+                b['ifsc_code']?.toString() ?? '',
+              ),
+              _detailTile(
+                Icons.location_on,
+                'Branch',
+                b['branch']?.toString() ?? '',
+              ),
+              if ((b['upi_id']?.toString() ?? '').isNotEmpty)
+                _detailTile(Icons.qr_code, 'UPI ID', b['upi_id'].toString()),
+            ] else
+              Card(
+                elevation: 0,
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.account_balance_outlined,
+                        size: 40,
+                        color: Colors.blueGrey.shade400,
+                      ),
+                      const SizedBox(height: 8),
+                      const Text('No bank account has been registered yet.'),
+                    ],
+                  ),
+                ),
+              ),
+            _detailTile(
+              Icons.currency_rupee,
+              'Standard Monthly Rate',
+              '₹$standardRate / unit',
+            ),
+            if ((b['billing_cycle']?.toString() ?? '').isNotEmpty)
+              _detailTile(
+                Icons.calendar_month_outlined,
+                'Billing Cycle',
+                b['billing_cycle'].toString(),
+              ),
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: _isSaving ? null : () => _showBankDetailsForm(b),
+              icon: _isSaving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(configured ? Icons.edit_outlined : Icons.add),
+              label: Text(
+                _isSaving
+                    ? 'Saving...'
+                    : configured
+                    ? 'Edit Bank Details'
+                    : 'Add Bank Details',
+              ),
+            ),
           ],
         );
       },
@@ -2156,8 +3185,14 @@ class _BankDetailsTabState extends State<_BankDetailsTab> {
       ),
       child: ListTile(
         leading: Icon(icon, color: Colors.blueAccent),
-        title: Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        subtitle: Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        title: Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+        subtitle: Text(
+          value,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        ),
         trailing: IconButton(
           icon: const Icon(Icons.copy, size: 18),
           tooltip: 'Copy',

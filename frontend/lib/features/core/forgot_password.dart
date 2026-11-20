@@ -92,11 +92,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.done,
                   decoration: const InputDecoration(
                     labelText: 'Email Address',
                     prefixIcon: Icon(Icons.email_outlined),
                     border: OutlineInputBorder(),
                   ),
+                  onFieldSubmitted: (_) {
+                    if (!_isLoading) _handleSendResetCode();
+                  },
                   validator: (v) {
                     final val = v?.trim() ?? '';
                     if (val.isEmpty) return 'Email address is required';

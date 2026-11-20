@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/datasource/finance_api_service.dart';
+import 'widgets/financial_document_helper.dart';
 
 class BlockSecretaryFinanceScreen extends StatefulWidget {
   const BlockSecretaryFinanceScreen({super.key});
@@ -17,7 +18,7 @@ class _BlockSecretaryFinanceScreenState
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -40,12 +41,17 @@ class _BlockSecretaryFinanceScreenState
           tabs: const [
             Tab(text: 'My Unit Due'),
             Tab(text: 'Block Dues Status'),
+            Tab(text: 'Payment Receipts'),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
-        children: const [_PersonalUnitDueTab(), _BlockDuesStatusTab()],
+        children: const [
+          _PersonalUnitDueTab(),
+          _BlockDuesStatusTab(),
+          _BlockSecretaryReceiptsTab(),
+        ],
       ),
     );
   }
@@ -60,7 +66,7 @@ class _PersonalUnitDueTab extends StatefulWidget {
 }
 
 class _PersonalUnitDueTabState extends State<_PersonalUnitDueTab> {
-  late Future _billFuture;
+  late Future<Map<String, dynamic>> _billFuture;
   bool _isProcessing = false;
 
   @override
@@ -124,14 +130,34 @@ class _PersonalUnitDueTabState extends State<_PersonalUnitDueTab> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
+    return FutureBuilder<Map<String, dynamic>>(
       future: _billFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final data = snapshot.data ?? {};
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  snapshot.error.toString().replaceAll('Exception: ', ''),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _loadBill,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final data = snapshot.data ?? <String, dynamic>{};
         final hasPending = data['has_pending_bill'] ?? false;
         final bill = data['bill'];
 
@@ -205,6 +231,187 @@ class _PersonalUnitDueTabState extends State<_PersonalUnitDueTab> {
   }
 }
 
+class _BlockSecretaryReceiptsTab extends StatefulWidget {
+  const _BlockSecretaryReceiptsTab();
+
+  @override
+  State<_BlockSecretaryReceiptsTab> createState() =>
+      _BlockSecretaryReceiptsTabState();
+}
+
+class _BlockSecretaryReceiptsTabState
+    extends State<_BlockSecretaryReceiptsTab> {
+  late Future<List<dynamic>> _receiptsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _receiptsFuture = FinanceApiService.fetchPaymentHistory();
+  }
+
+  void _reloadReceipts() {
+    setState(() {
+      _receiptsFuture = FinanceApiService.fetchPaymentHistory();
+    });
+  }
+
+  String _formatDate(BuildContext context, dynamic value) {
+    final rawDate = value?.toString() ?? '';
+    final parsed = DateTime.tryParse(rawDate);
+    if (parsed == null) return rawDate;
+    return MaterialLocalizations.of(context).formatMediumDate(parsed.toLocal());
+  }
+
+  FinancialDocument _buildReceipt(Map<String, dynamic> receipt) {
+    return FinancialDocument.fromPaymentReceipt(receipt);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<dynamic>>(
+      future: _receiptsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  snapshot.error.toString().replaceAll('Exception: ', ''),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _reloadReceipts,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final receipts = snapshot.data ?? [];
+        if (receipts.isEmpty) {
+          return RefreshIndicator(
+            onRefresh: () async => _reloadReceipts(),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                SizedBox(
+                  height: 260,
+                  child: Center(
+                    child: Text('No previous payment receipts found.'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return RefreshIndicator(
+          onRefresh: () async => _reloadReceipts(),
+          child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(12),
+            itemCount: receipts.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final receipt = Map<String, dynamic>.from(receipts[index] as Map);
+              final document = _buildReceipt(receipt);
+              final amountValue = receipt['amount'];
+              final amount = amountValue is num
+                  ? amountValue.toDouble()
+                  : double.tryParse(amountValue?.toString() ?? '') ?? 0;
+              final paymentDate =
+                  receipt['payment_date'] ?? receipt['generated_at'];
+
+              return Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  side: BorderSide(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.green.shade50,
+                        child: Icon(
+                          Icons.receipt_long_outlined,
+                          color: Colors.green.shade800,
+                        ),
+                      ),
+                      title: Text(
+                        '${receipt['bill_month'] ?? '—'} · ₹${amount.toStringAsFixed(2)}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        'Receipt: ${receipt['receipt_number'] ?? '—'}\n'
+                        'Payer: ${receipt['payer_name'] ?? '—'} · '
+                        'Method: ${receipt['payment_method'] ?? '—'}',
+                      ),
+                      isThreeLine: true,
+                      trailing: Text(
+                        _formatDate(context, paymentDate),
+                        textAlign: TextAlign.end,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                      child: Wrap(
+                        alignment: WrapAlignment.end,
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: () =>
+                                FinancialDocumentHelper.viewDocument(
+                                  context,
+                                  document,
+                                ),
+                            icon: const Icon(
+                              Icons.visibility_outlined,
+                              size: 16,
+                            ),
+                            label: const Text('View receipt'),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: () async {
+                              await FinancialDocumentHelper.downloadDocument(
+                                context,
+                                document,
+                              );
+                            },
+                            icon: const Icon(
+                              Icons.picture_as_pdf_outlined,
+                              size: 16,
+                            ),
+                            label: const Text('Download PDF'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
 // TAB 2: BLOCK DUES STATUS WITH SEARCH & FILTER
 class _BlockDuesStatusTab extends StatefulWidget {
   const _BlockDuesStatusTab();
@@ -214,13 +421,31 @@ class _BlockDuesStatusTab extends StatefulWidget {
 }
 
 class _BlockDuesStatusTabState extends State<_BlockDuesStatusTab> {
-  late Future _reportFuture;
+  late Future<Map<String, dynamic>> _reportFuture;
   final TextEditingController _searchController = TextEditingController();
-  String _selectedStatusFilter = 'ALL'; // Options: ALL, PAID, PENDING
+  String _selectedStatusFilter = 'ALL';
+  late DateTime _selectedMonth;
+
+  static const _monthNames = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
 
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now();
+    _selectedMonth = DateTime(now.year, now.month);
     _loadReport();
   }
 
@@ -232,13 +457,37 @@ class _BlockDuesStatusTabState extends State<_BlockDuesStatusTab> {
 
   void _loadReport() {
     setState(() {
-      _reportFuture = FinanceApiService.fetchBlockReport();
+      _reportFuture = FinanceApiService.fetchBlockReport(
+        billMonth: _formatBillMonth(_selectedMonth),
+      );
+    });
+  }
+
+  String _formatBillMonth(DateTime month) =>
+      '${_monthNames[month.month - 1]} ${month.year}';
+
+  Future<void> _selectMonth() async {
+    final now = DateTime.now();
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: _selectedMonth,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(now.year + 5),
+      helpText: 'Select billing month',
+    );
+    if (selected == null || !mounted) return;
+
+    setState(() {
+      _selectedMonth = DateTime(selected.year, selected.month);
+      _reportFuture = FinanceApiService.fetchBlockReport(
+        billMonth: _formatBillMonth(_selectedMonth),
+      );
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
+    return FutureBuilder<Map<String, dynamic>>(
       future: _reportFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -247,75 +496,161 @@ class _BlockDuesStatusTabState extends State<_BlockDuesStatusTab> {
 
         if (snapshot.hasError) {
           return Center(
-            child: Text(
-              snapshot.error.toString().replaceAll('Exception: ', ''),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  snapshot.error.toString().replaceAll('Exception: ', ''),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _loadReport,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+              ],
             ),
           );
         }
 
-        final data = snapshot.data ?? {};
+        final data = snapshot.data ?? <String, dynamic>{};
         final summary = data['summary'] ?? {};
         final rawBills = (data['bills'] as List<dynamic>?) ?? [];
 
-        // Apply Search and Status Filters
         final filteredBills = rawBills.where((item) {
           final flatNum = (item['flat_number'] ?? '').toString().toLowerCase();
           final residentName = (item['resident_name'] ?? '')
               .toString()
               .toLowerCase();
-          final status = (item['status'] ?? '').toString().toUpperCase();
+          final status = (item['status'] ?? 'unbilled')
+              .toString()
+              .trim()
+              .toUpperCase();
           final searchQuery = _searchController.text.trim().toLowerCase();
 
-          // 1. Check search text match (flat number or resident name)
           final matchesSearch =
               searchQuery.isEmpty ||
               flatNum.contains(searchQuery) ||
               residentName.contains(searchQuery);
 
-          // 2. Check status filter match
-          bool matchesStatus = true;
-          if (_selectedStatusFilter == 'PAID') {
-            matchesStatus = status == 'PAID';
-          } else if (_selectedStatusFilter == 'PENDING') {
-            matchesStatus = status == 'PENDING';
-          }
+          final matchesStatus = switch (_selectedStatusFilter) {
+            'PAID' => status == 'PAID',
+            'PENDING' => status == 'PENDING',
+            'UNBILLED' => status == 'UNBILLED',
+            _ => true,
+          };
 
           return matchesSearch && matchesStatus;
         }).toList();
+
+        final totalFlats = summary['total_flats'] ?? rawBills.length;
+        final paidCount = summary['paid_count'] ?? 0;
+        final pendingCount = summary['pending_count'] ?? 0;
+        final unbilledCount =
+            summary['unbilled_count'] ??
+            rawBills
+                .where(
+                  (item) =>
+                      (item['status'] ?? '').toString().toLowerCase() ==
+                      'unbilled',
+                )
+                .length;
 
         return RefreshIndicator(
           onRefresh: () async => _loadReport(),
           child: Column(
             children: [
-              // Summary Banner
               Container(
-                padding: const EdgeInsets.all(14),
-                color: Colors.blueGrey.shade50,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                width: double.infinity,
+                margin: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.indigo.shade900, Colors.blueGrey.shade800],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Block: ${data['block_name'] ?? '--'}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.apartment_outlined,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${data['block_name'] ?? 'Block'} Maintenance',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                'Billing period: ${_formatBillMonth(_selectedMonth)}',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.82),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: _selectMonth,
+                          tooltip: 'Change billing month',
+                          icon: const Icon(
+                            Icons.calendar_month_outlined,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
-                    Text(
-                      'Paid: ${summary['paid_count']}/${summary['total_flats']}',
-                    ),
-                    Text(
-                      'Rate: ${summary['collection_rate']}%',
-                      style: TextStyle(
-                        color: Colors.teal.shade800,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    const SizedBox(height: 14),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _summaryChip(
+                          'Paid',
+                          '$paidCount',
+                          Icons.check_circle_outline,
+                        ),
+                        _summaryChip(
+                          'Pending',
+                          '$pendingCount',
+                          Icons.pending_outlined,
+                        ),
+                        _summaryChip(
+                          'Not billed',
+                          '$unbilledCount',
+                          Icons.receipt_long_outlined,
+                        ),
+                        _summaryChip(
+                          'Collection',
+                          '${summary['collection_rate'] ?? 0}%',
+                          Icons.trending_up,
+                        ),
+                        _summaryChip(
+                          'Flats',
+                          '$totalFlats',
+                          Icons.home_work_outlined,
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              const Divider(height: 1),
-
-              // Filter Controls Header
               Padding(
-                padding: const EdgeInsets.all(12.0),
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -323,10 +658,11 @@ class _BlockDuesStatusTabState extends State<_BlockDuesStatusTab> {
                       controller: _searchController,
                       onChanged: (_) => setState(() {}),
                       decoration: InputDecoration(
-                        hintText: 'Search Flat / Resident...',
+                        hintText: 'Search by flat or resident',
                         prefixIcon: const Icon(Icons.search, size: 20),
                         suffixIcon: _searchController.text.isNotEmpty
                             ? IconButton(
+                                tooltip: 'Clear search',
                                 icon: const Icon(Icons.clear, size: 18),
                                 onPressed: () {
                                   _searchController.clear();
@@ -339,8 +675,10 @@ class _BlockDuesStatusTabState extends State<_BlockDuesStatusTab> {
                           vertical: 8,
                         ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
+                        filled: true,
+                        fillColor: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -354,6 +692,10 @@ class _BlockDuesStatusTabState extends State<_BlockDuesStatusTab> {
                             value: 'PENDING',
                             label: Text('Pending'),
                           ),
+                          ButtonSegment(
+                            value: 'UNBILLED',
+                            label: Text('Not billed'),
+                          ),
                         ],
                         selected: {_selectedStatusFilter},
                         onSelectionChanged: (newSelection) {
@@ -366,61 +708,90 @@ class _BlockDuesStatusTabState extends State<_BlockDuesStatusTab> {
                   ],
                 ),
               ),
-
-              // Results List / Empty State
               Expanded(
                 child: filteredBills.isEmpty
-                    ? Center(
-                        child: Text(
-                          'No flats match your filter criteria.',
-                          style: TextStyle(color: Colors.grey.shade600),
-                        ),
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          SizedBox(
+                            height: 180,
+                            child: Center(
+                              child: Text(
+                                rawBills.isEmpty
+                                    ? 'No maintenance records for this month.'
+                                    : 'No flats match your search and status filters.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.grey.shade600),
+                              ),
+                            ),
+                          ),
+                        ],
                       )
                     : ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
                         itemCount: filteredBills.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        separatorBuilder: (_, _) => const SizedBox(height: 8),
                         itemBuilder: (ctx, i) {
                           final item = filteredBills[i];
-                          final isPaid =
-                              (item['status'] ?? '').toString().toLowerCase() ==
-                              'paid';
+                          final status = (item['status'] ?? 'unbilled')
+                              .toString()
+                              .trim()
+                              .toLowerCase();
+                          final statusLabel = switch (status) {
+                            'paid' => 'PAID',
+                            'pending' => 'PENDING',
+                            'unbilled' => 'NOT BILLED',
+                            _ => status.toUpperCase(),
+                          };
+                          final statusColor = switch (status) {
+                            'paid' => Colors.green.shade800,
+                            'pending' => Colors.orange.shade900,
+                            _ => Colors.blueGrey.shade700,
+                          };
+                          final amountText = status == 'unbilled'
+                              ? 'Bill not generated'
+                              : 'Amount: ₹${item['total_payable'] ?? item['payable_amount']}';
 
                           return Card(
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               side: BorderSide(color: Colors.grey.shade300),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 6,
+                              ),
                               title: Text(
-                                'Flat ${item['flat_number']} (${item['resident_name']})',
+                                'Flat ${item['flat_number']}',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              subtitle: Text(
-                                'Amount: ₹${item['payable_amount']} • Due: ${item['due_date']}',
+                              subtitle: Padding(
+                                padding: const EdgeInsets.only(top: 5),
+                                child: Text(
+                                  '${item['resident_name'] ?? 'Resident'}\n'
+                                  '$amountText · Due ${item['due_date'] ?? '--'}',
+                                ),
                               ),
+                              isThreeLine: true,
                               trailing: Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
+                                  horizontal: 9,
+                                  vertical: 5,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: isPaid
-                                      ? Colors.green.shade50
-                                      : Colors.red.shade50,
-                                  borderRadius: BorderRadius.circular(4),
+                                  color: statusColor.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  isPaid ? 'PAID' : 'PENDING',
+                                  statusLabel,
                                   style: TextStyle(
-                                    color: isPaid
-                                        ? Colors.green.shade800
-                                        : Colors.red.shade800,
+                                    color: statusColor,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 11,
+                                    fontSize: 10,
                                   ),
                                 ),
                               ),
@@ -433,6 +804,32 @@ class _BlockDuesStatusTabState extends State<_BlockDuesStatusTab> {
           ),
         );
       },
+    );
+  }
+
+  Widget _summaryChip(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: Colors.white),
+          const SizedBox(width: 6),
+          Text(
+            '$label: $value',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

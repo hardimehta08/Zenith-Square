@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/datasource/communication_api_service.dart';
 import '../../data/datasource/api_service.dart';
+import 'notice_widgets.dart';
 
 class SecretaryNoticesScreen extends StatefulWidget {
   const SecretaryNoticesScreen({super.key});
@@ -37,17 +38,6 @@ class _SecretaryNoticesScreenState extends State<SecretaryNoticesScreen> {
       }
     } catch (e) {
       debugPrint('[SecretaryNotices] Error loading blocks: $e');
-    }
-  }
-
-  Color _getPriorityColor(String priority) {
-    switch (priority.toLowerCase()) {
-      case 'urgent':
-        return Colors.red.shade700;
-      case 'high':
-        return Colors.orange.shade800;
-      default:
-        return Colors.teal;
     }
   }
 
@@ -108,8 +98,10 @@ class _SecretaryNoticesScreenState extends State<SecretaryNoticesScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: Colors.blueGrey.shade50,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) {
@@ -127,21 +119,15 @@ class _SecretaryNoticesScreenState extends State<SecretaryNoticesScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Post Society Notice',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(ctx),
-                        ),
-                      ],
+                    NoticeComposerHeader(
+                      title: 'Post Society Notice',
+                      subtitle: 'Share an official update with residents.',
+                      icon: Icons.campaign_outlined,
+                      onClose: () {
+                        titleController.dispose();
+                        descController.dispose();
+                        Navigator.pop(ctx);
+                      },
                     ),
                     const SizedBox(height: 14),
                     if (sheetError != null) ...[
@@ -283,15 +269,19 @@ class _SecretaryNoticesScreenState extends State<SecretaryNoticesScreen> {
                             },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.indigo.shade900,
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       child: isSubmitting
                           ? const CircularProgressIndicator(color: Colors.white)
                           : const Text(
                               'Publish Announcement',
                               style: TextStyle(
-                                color: Colors.white,
                                 fontSize: 16,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                     ),
@@ -308,12 +298,14 @@ class _SecretaryNoticesScreenState extends State<SecretaryNoticesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.blueGrey.shade50,
       appBar: AppBar(title: const Text('Secretary Notice Board')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openPublishNoticeSheet,
         backgroundColor: Colors.indigo.shade900,
-        icon: const Icon(Icons.campaign, color: Colors.white),
-        label: const Text('Post Notice', style: TextStyle(color: Colors.white)),
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Publish notice'),
       ),
       body: FutureBuilder<List<dynamic>>(
         future: _noticesFuture,
@@ -321,38 +313,59 @@ class _SecretaryNoticesScreenState extends State<SecretaryNoticesScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          final notices = snapshot.data ?? [];
-          if (notices.isEmpty) {
-            return const Center(child: Text('No notices posted yet.'));
+          if (snapshot.hasError) {
+            return NoticeErrorState(
+              message: snapshot.error.toString().replaceAll('Exception: ', ''),
+              onRetry: _loadNotices,
+            );
           }
-          return ListView.separated(
-            padding: const EdgeInsets.all(12),
-            itemCount: notices.length,
-            separatorBuilder: (ctx, i) => const SizedBox(height: 8),
-            itemBuilder: (ctx, i) {
-              final item = notices[i];
-              return Card(
-                child: ListTile(
-                  title: Text(
-                    item['title'] ?? '',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    '${item['description']}\nScope: ${item['block_name'] ?? 'All Blocks'}',
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(
-                      Icons.delete_outline,
-                      color: Colors.redAccent,
-                    ),
+
+          final notices = snapshot.data ?? [];
+          return RefreshIndicator(
+            onRefresh: () async => _loadNotices(),
+            child: ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 104),
+              itemCount: notices.isEmpty ? 2 : notices.length + 1,
+              separatorBuilder: (ctx, i) => const SizedBox(height: 12),
+              itemBuilder: (ctx, i) {
+                if (i == 0) {
+                  return NoticePageHeader(
+                    title: 'Secretary Notice Board',
+                    subtitle:
+                        'Publish clear, official updates for residents across your society.',
+                    count: notices.length,
+                  );
+                }
+
+                if (notices.isEmpty) {
+                  return const NoticeEmptyState(
+                    title: 'No notices published',
+                    subtitle:
+                        'Use “Publish notice” to share an update with residents.',
+                  );
+                }
+
+                final item = notices[i - 1];
+                return NoticeEntryCard(
+                  title: item['title']?.toString() ?? 'Untitled notice',
+                  description: item['description']?.toString() ?? '',
+                  priority: item['priority']?.toString() ?? 'normal',
+                  scope: item['block_name']?.toString() ?? 'All Blocks',
+                  author: item['author_name']?.toString(),
+                  createdAt: item['created_at'],
+                  action: IconButton(
+                    tooltip: 'Archive notice',
                     onPressed: () => _handleDeleteNotice(
-                      item['notice_id'],
-                      item['title'] ?? '',
+                      item['notice_id'].toString(),
+                      item['title']?.toString() ?? 'Notice',
                     ),
+                    icon: const Icon(Icons.archive_outlined),
+                    color: Colors.blueGrey.shade700,
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           );
         },
       ),

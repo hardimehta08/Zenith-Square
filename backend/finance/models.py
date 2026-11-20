@@ -77,3 +77,26 @@ class SocietyIncome(models.Model):
 
     def __str__(self):
         return f"{self.income_type} - {self.amount}"
+
+
+class SocietyBankDetails(models.Model):
+    society = models.OneToOneField(
+        'core_api.Societies',
+        models.CASCADE,
+        db_column='society_id',
+        related_name='bank_details',
+    )
+    account_name = models.CharField(max_length=100)
+    bank_name = models.CharField(max_length=100)
+    account_number = models.CharField(max_length=34)
+    ifsc_code = models.CharField(max_length=11)
+    branch = models.CharField(max_length=100)
+    upi_id = models.CharField(max_length=100, blank=True, default='')
+
+    class Meta:
+        db_table = 'society_bank_details'
+        verbose_name = 'Society Bank Details'
+        verbose_name_plural = 'Society Bank Details'
+
+    def __str__(self):
+        return f'{self.society.society_name} - {self.bank_name}'

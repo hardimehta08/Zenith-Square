@@ -183,7 +183,7 @@ class _SecretaryHomeScreenState extends State<SecretaryHomeScreen> {
                     '/secretary-complaints',
                   ),
                   _ActionItem(
-                    'Announcements',
+                    'Notices',
                     Icons.campaign_outlined,
                     Colors.teal,
                     '/secretary-notices',
@@ -201,7 +201,7 @@ class _SecretaryHomeScreenState extends State<SecretaryHomeScreen> {
                     '/secretary-amenities',
                   ),
                   _ActionItem(
-                    'Assets & Service',
+                    'Vehicle',
                     Icons.build_circle_outlined,
                     Colors.deepOrange,
                     '/secretary-assets',

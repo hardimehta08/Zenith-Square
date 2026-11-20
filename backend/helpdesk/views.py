@@ -17,8 +17,8 @@ class ComplaintListCreateView(APIView):
     def get(self, request):
         role_name = request.user.role.role_name.lower() if request.user.role else 'resident'
         
-        # Chairman & General Secretary see all complaints across society
-        if role_name in ['chairman', 'secretary', 'admin']:
+        # Society management roles see all complaints across the society.
+        if role_name in ['chairman', 'secretary', 'admin', 'treasurer']:
             complaints = Complaint.objects.filter(block__society=request.user.society).order_by('-created_at')
         
         # Block Secretary sees complaints from their specific block

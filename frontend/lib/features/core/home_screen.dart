@@ -137,6 +137,15 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ];
 
+          items.add(
+            _ActionItem(
+              'Nominee Management',
+              Icons.badge_outlined,
+              Colors.blue,
+              '/nominee',
+            ),
+          );
+
           if (!isTenant) {
             items.addAll([
               _ActionItem(
@@ -144,12 +153,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 Icons.how_to_vote_outlined,
                 Colors.orange.shade700,
                 '/polls',
-              ),
-              _ActionItem(
-                'Nominee',
-                Icons.badge_outlined,
-                Colors.blue,
-                '/nominee',
               ),
               _ActionItem(
                 'Society Documents',
@@ -341,7 +344,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     item.title,
                     textAlign: TextAlign.center,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 12,

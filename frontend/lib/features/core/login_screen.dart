@@ -13,6 +13,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _passwordFocusNode = FocusNode();
 
   bool _isSubmitting = false;
   bool _obscurePassword = true;
@@ -87,6 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _phoneController.dispose();
     _passwordController.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
@@ -139,6 +141,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: Icon(Icons.phone_outlined),
                       border: OutlineInputBorder(),
                     ),
+                    onFieldSubmitted: (_) {
+                      if (_passwordController.text.isNotEmpty) {
+                        if (!_isSubmitting) _handleLogin();
+                      } else {
+                        FocusScope.of(context).requestFocus(_passwordFocusNode);
+                      }
+                    },
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) {
                         return 'Please enter phone number';
@@ -154,6 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   // Password Input
                   TextFormField(
                     controller: _passwordController,
+                    focusNode: _passwordFocusNode,
                     obscureText: _obscurePassword,
                     textInputAction: TextInputAction.done,
                     decoration: InputDecoration(
@@ -171,6 +181,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
+                    onFieldSubmitted: (_) {
+                      if (!_isSubmitting) _handleLogin();
+                    },
                     validator: (v) => (v == null || v.isEmpty)
                         ? 'Please enter password'
                         : null,

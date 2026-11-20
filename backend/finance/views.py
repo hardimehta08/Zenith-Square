@@ -1,8 +1,8 @@
 import re
 import uuid
-from datetime import datetime, date,timedelta
-from decimal import Decimal
 import calendar
+from datetime import datetime, date, timedelta
+from decimal import Decimal
 from django.db import transaction
 from django.db.models import Sum, Count, Q, Avg
 from django.utils import timezone
@@ -12,17 +12,36 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
 from core_api.models import Resident, Occupancy, Flats, Blocks, Nominee, Users
-from .models import MaintenanceBill, Payment, PaymentReceipt, SocietyExpenses, SocietyIncome
-from facilities.models import AssetMaintenance, AmenityBooking, Amenity, Vehicle, Asset
+from .models import (
+    MaintenanceBill,
+    Payment,
+    PaymentReceipt,
+    SocietyBankDetails,
+    SocietyExpenses,
+    SocietyIncome,
+)
+from .late_fees import _count_overdue_months, calculate_late_fee
+from facilities.models import AmenityBooking, Amenity, Vehicle, Asset
 from security.models import VisitorLogs, SecurityAlerts
-from community.models import Tenant, PollsResponse
+from community.models import Tenant
 from helpdesk.models import Complaint, Feedback
 from .serializers import (
-    MaintenanceBillSerializer, 
-    PaymentReceiptSerializer, 
+    MaintenanceBillSerializer,
+    PaymentReceiptSerializer,
+    SocietyBankDetailsSerializer,
     SocietyExpensesSerializer,
     SocietyIncomeSerializer
 )
+
+def _get_bill_late_fee(bill, society=None):
+    """Return monthly late fee Decimal for a pending bill, or Decimal('0.00')."""
+    if not bill or bill.status.lower() != 'pending':
+        return Decimal('0.00')
+    soc = society or (bill.flat.block.society if (bill.flat and bill.flat.block) else None)
+    if not soc or not soc.late_fee_percent:
+        return Decimal('0.00')
+    _, late_fee = calculate_late_fee(bill.payable_amount, bill.due_date, soc.late_fee_percent)
+    return late_fee
 
 
 # 1. Latest / Pending Maintenance Bill for Logged-In Resident
@@ -37,6 +56,19 @@ class ResidentPendingBillView(APIView):
         bill = MaintenanceBill.objects.filter(flat=resident.flat, status__iexact='pending').order_by('due_date').first()
         if not bill:
             return Response({'success': True, 'has_pending_bill': False, 'message': 'All maintenance dues are settled!'}, status=status.HTTP_200_OK)
+
+        # Rate synchronization:
+        # If an active tenant with custom_maintenance exists for this flat, ensure bill.payable_amount reflects it
+        active_tenant = Tenant.objects.filter(flat=resident.flat, status__iexact='active').first()
+        if active_tenant and active_tenant.custom_maintenance is not None:
+            if bill.payable_amount != active_tenant.custom_maintenance:
+                bill.payable_amount = active_tenant.custom_maintenance
+                bill.save(update_fields=['payable_amount'])
+        elif not active_tenant and bill.flat and bill.flat.block and bill.flat.block.society:
+            std_rate = bill.flat.block.society.standard_rate
+            if std_rate is not None and bill.payable_amount != std_rate:
+                bill.payable_amount = std_rate
+                bill.save(update_fields=['payable_amount'])
 
         return Response({
             'success': True,
@@ -65,11 +97,21 @@ class SettleMaintenancePaymentView(APIView):
         if not bill:
             return Response({'success': False, 'error': 'Bill not found or already paid.'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Compute dynamic final amount including late fee
+        # Dynamic rate synchronization:
+        # If there is an active tenant with custom_maintenance for this flat, ensure base amount reflects it
+        active_tenant = Tenant.objects.filter(flat=bill.flat, status__iexact='active').first()
+        if active_tenant and active_tenant.custom_maintenance is not None:
+            base_amount = active_tenant.custom_maintenance
+            if bill.payable_amount != base_amount:
+                bill.payable_amount = base_amount
+        else:
+            base_amount = bill.payable_amount
+
+        # Compute dynamic final amount including monthly recurring late fee
         society = bill.flat.block.society if (bill.flat and bill.flat.block) else None
-        final_amount = bill.payable_amount
-        if bill.due_date < date.today() and society and society.late_fee_percent:
-            late_fee = round((bill.payable_amount * Decimal(str(society.late_fee_percent))) / Decimal('100'), 2)
+        final_amount = Decimal(str(base_amount))
+        if society and society.late_fee_percent:
+            _, late_fee = calculate_late_fee(base_amount, bill.due_date, society.late_fee_percent)
             final_amount += late_fee
 
         # 1. Update Bill
@@ -123,7 +165,7 @@ class GenerateMaintenanceBillsView(APIView):
 
         bill_month = request.data.get('bill_month', datetime.now().strftime('%B %Y'))
         due_date_str = request.data.get('due_date')
-        
+
         if due_date_str:
             due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date()
         else:
@@ -135,11 +177,9 @@ class GenerateMaintenanceBillsView(APIView):
 
         for flat in flats:
             if not MaintenanceBill.objects.filter(flat=flat, bill_month=bill_month).exists():
-                # Direct lookup on Tenant model using flat_id and active status
-                tenant_record = Tenant.objects.filter(flat=flat, status='active').first()
+                tenant_record = Tenant.objects.filter(flat=flat, status__iexact='active').first()
                 primary_occ = Occupancy.objects.filter(flat=flat, is_primary=True).first()
 
-                # Rate priority: Tenant custom_maintenance -> Occupancy custom_rate -> Society standard_rate
                 payable_amt = society.standard_rate
                 if tenant_record and getattr(tenant_record, 'custom_maintenance', None) is not None:
                     payable_amt = tenant_record.custom_maintenance
@@ -165,6 +205,7 @@ class GenerateMaintenanceBillsView(APIView):
             'late_fee_percent': float(society.late_fee_percent or 0)
         }, status=status.HTTP_201_CREATED)
 
+
 # 4. Payment History for Resident
 class ResidentPaymentHistoryView(APIView):
     permission_classes = [IsAuthenticated]
@@ -174,7 +215,19 @@ class ResidentPaymentHistoryView(APIView):
         if not resident:
             return Response({'success': False, 'error': 'Resident not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        receipts = PaymentReceipt.objects.filter(payment__resident=resident).order_by('-generated_at')
+        receipts = PaymentReceipt.objects.filter(payment__resident=resident).select_related(
+            'payment',
+            'payment__bill',
+            'payment__bill__payer',
+            'payment__bill__flat',
+            'payment__bill__flat__block',
+            'payment__bill__flat__block__society',
+            'payment__resident',
+            'payment__resident__user',
+            'payment__resident__flat',
+            'payment__resident__flat__block',
+            'payment__resident__flat__block__society',
+        ).order_by('-generated_at')
         return Response({
             'success': True,
             'history': PaymentReceiptSerializer(receipts, many=True).data
@@ -229,13 +282,11 @@ class ChairmanFinancialSummaryView(APIView):
             return Response({'success': False, 'error': 'Unauthorized.'}, status=status.HTTP_403_FORBIDDEN)
 
         society = request.user.society
-        # 1. Direct Maintenance Payments from residents
         total_maintenance_collected = Payment.objects.filter(
-            resident__flat__block__society=society, 
+            resident__flat__block__society=society,
             status='completed'
         ).aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
 
-        # 2. Miscellaneous/Other Society Incomes
         total_misc_income = SocietyIncome.objects.filter(
             society=society
         ).aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
@@ -247,12 +298,16 @@ class ChairmanFinancialSummaryView(APIView):
             user__isnull=False
         ).values_list('flat_id', flat=True).distinct())
 
-        total_pending = MaintenanceBill.objects.filter(
-            flat__block__society=society, 
+        pending_bills = MaintenanceBill.objects.filter(
+            flat__block__society=society,
             status='pending'
         ).filter(
             Q(flat_id__in=assigned_flat_ids) | Q(payer__isnull=False)
-        ).aggregate(Sum('payable_amount'))['payable_amount__sum'] or Decimal('0.00')
+        )
+
+        total_pending = Decimal('0.00')
+        for b in pending_bills:
+            total_pending += Decimal(str(b.payable_amount)) + _get_bill_late_fee(b, society)
 
         total_expenses = SocietyExpenses.objects.filter(
             society=society
@@ -267,6 +322,7 @@ class ChairmanFinancialSummaryView(APIView):
             'total_expenses': float(total_expenses),
             'net_balance': float(total_collected) - float(total_expenses)
         }, status=status.HTTP_200_OK)
+
 
 # 7. Executive Multi-Metric Financial Reports
 class SocietyExecutiveReportView(APIView):
@@ -287,7 +343,7 @@ class SocietyExecutiveReportView(APIView):
 
         # 1. OVERALL TREASURY POSITION
         total_maintenance_collected = Payment.objects.filter(
-            resident__flat__block__society=society, 
+            resident__flat__block__society=society,
             status='completed'
         ).aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
 
@@ -308,12 +364,16 @@ class SocietyExecutiveReportView(APIView):
             user__isnull=False
         ).values_list('flat_id', flat=True).distinct())
 
-        total_pending_maintenance = MaintenanceBill.objects.filter(
-            flat__block__society=society, 
+        pending_bills = MaintenanceBill.objects.filter(
+            flat__block__society=society,
             status='pending'
         ).filter(
             Q(flat_id__in=assigned_flat_ids) | Q(payer__isnull=False)
-        ).aggregate(Sum('payable_amount'))['payable_amount__sum'] or Decimal('0.00')
+        )
+
+        total_pending_maintenance = Decimal('0.00')
+        for b in pending_bills:
+            total_pending_maintenance += Decimal(str(b.payable_amount)) + _get_bill_late_fee(b, society)
 
         total_assigned_flats = len(assigned_flat_ids)
         total_flats_count = Flats.objects.filter(block__society=society).count()
@@ -354,7 +414,6 @@ class SocietyExecutiveReportView(APIView):
             start_date = date(year, month, 1)
             end_date = date(year, month, last_day)
 
-            # Maintenance collections from assigned flats only
             billed = MaintenanceBill.objects.filter(
                 flat__block__society=society,
                 bill_month__icontains=m_name
@@ -384,7 +443,6 @@ class SocietyExecutiveReportView(APIView):
             total_inflow = collected + soc_income
             net_surplus = total_inflow - soc_expenses
 
-            # Month Categorical Breakdowns
             month_expenses_cats = SocietyExpenses.objects.filter(
                 society=society,
                 payment_date__range=(start_date, end_date)
@@ -507,7 +565,7 @@ class SocietyExecutiveReportView(APIView):
         v_week = VisitorLogs.objects.filter(society=society, entry_time__date__gte=week_start).count()
         v_month = VisitorLogs.objects.filter(society=society, entry_time__year=today.year, entry_time__month=today.month).count()
         v_inside = VisitorLogs.objects.filter(society=society, exit_time__isnull=True).count()
-        
+
         purposes = list(
             VisitorLogs.objects.filter(society=society)
             .values('purpose')
@@ -599,7 +657,7 @@ class SocietyExecutiveReportView(APIView):
             },
             'treasury_summary': treasury_summary,
             'monthly_reports': monthly_reports,
-            'monthly_summary_table': monthly_reports,  # backward compatibility
+            'monthly_summary_table': monthly_reports,
             'category_breakdowns': {
                 'expenses': [
                     {'category': e['expense_type'], 'amount': float(e['total'])}
@@ -620,6 +678,7 @@ class SocietyExecutiveReportView(APIView):
             'facilities_report': facilities_report,
             'vehicles_report': vehicles_report,
         }, status=status.HTTP_200_OK)
+
 
 class SocietyIncomeView(APIView):
     permission_classes = [IsAuthenticated]
@@ -675,7 +734,16 @@ class AllMaintenanceBillsView(APIView):
 
         bill_list = []
         for b in bills:
-            # 1. Prefer primary occupant, otherwise latest registered resident with a user
+            if b.status.lower() == 'pending':
+                active_tenant = Tenant.objects.filter(flat=b.flat, status__iexact='active').first()
+                if active_tenant and active_tenant.custom_maintenance is not None:
+                    if b.payable_amount != active_tenant.custom_maintenance:
+                        b.payable_amount = active_tenant.custom_maintenance
+                        b.save(update_fields=['payable_amount'])
+                elif not active_tenant and society.standard_rate is not None and b.payable_amount != society.standard_rate:
+                    b.payable_amount = society.standard_rate
+                    b.save(update_fields=['payable_amount'])
+
             primary_occ = Occupancy.objects.filter(flat=b.flat, is_primary=True).select_related('resident__user').first()
             if primary_occ and primary_occ.resident and primary_occ.resident.user:
                 resident = primary_occ.resident
@@ -687,7 +755,9 @@ class AllMaintenanceBillsView(APIView):
             has_assigned_resident = bool(resident and resident.user)
             is_assigned = has_assigned_resident or (b.payer is not None)
             resident_name = resident.user.user_name if has_assigned_resident else (b.payer.user_name if b.payer else 'Unassigned')
-            payable_amt = float(b.payable_amount) if is_assigned else 0.0
+            base_amt = Decimal(str(b.payable_amount)) if is_assigned else Decimal('0.00')
+            late_fee = _get_bill_late_fee(b, society) if is_assigned else Decimal('0.00')
+            total_payable_amt = base_amt + late_fee
 
             bill_list.append({
                 'bill_id': b.bill_id,
@@ -701,7 +771,9 @@ class AllMaintenanceBillsView(APIView):
                 'all_residents': all_residents_names,
                 'is_assigned': is_assigned,
                 'society_maintenance_amount': float(b.payable_amount),
-                'payable_amount': payable_amt,
+                'payable_amount': float(base_amt),
+                'late_fee_amount': float(late_fee),
+                'total_payable': float(total_payable_amt),
                 'bill_month': b.bill_month,
                 'due_date': str(b.due_date),
                 'status': b.status if is_assigned else 'UNASSIGNED',
@@ -732,7 +804,6 @@ class OfflinePaymentView(APIView):
         if bill.status == 'paid':
             return Response({'success': False, 'error': 'This bill has already been settled.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Check if flat is assigned to a resident (primary occupant or latest registered resident)
         primary_occ = Occupancy.objects.filter(flat=bill.flat, is_primary=True).select_related('resident__user').first()
         if primary_occ and primary_occ.resident and primary_occ.resident.user:
             resident = primary_occ.resident
@@ -746,6 +817,20 @@ class OfflinePaymentView(APIView):
                 'error': f'Flat {bill.flat.flat_number if bill.flat else "N/A"} is currently unassigned. Offline payment cannot be verified until a resident is assigned.'
             }, status=status.HTTP_400_BAD_REQUEST)
 
+        active_tenant = Tenant.objects.filter(flat=bill.flat, status__iexact='active').first()
+        if active_tenant and active_tenant.custom_maintenance is not None:
+            base_amount = active_tenant.custom_maintenance
+            if bill.payable_amount != base_amount:
+                bill.payable_amount = base_amount
+        else:
+            base_amount = bill.payable_amount
+
+        society = bill.flat.block.society if (bill.flat and bill.flat.block) else None
+        final_amount = Decimal(str(base_amount))
+        if society and society.late_fee_percent:
+            _, late_fee = calculate_late_fee(base_amount, bill.due_date, society.late_fee_percent)
+            final_amount += late_fee
+
         bill.status = 'paid'
         bill.payer = resident.user if (resident and resident.user) else request.user
         bill.save()
@@ -756,7 +841,7 @@ class OfflinePaymentView(APIView):
             resident=resident,
             bill=bill,
             payment_type='MAINTENANCE',
-            amount=bill.payable_amount,
+            amount=final_amount,
             payment_method=payment_method,
             status='completed',
             payment_date=timezone.now()
@@ -793,7 +878,13 @@ class AllReceiptsView(APIView):
             return Response({'success': False, 'error': 'Society context missing.'}, status=status.HTTP_404_NOT_FOUND)
 
         receipts = PaymentReceipt.objects.filter(payment__resident__flat__block__society=society).select_related(
-            'payment', 'payment__resident', 'payment__resident__user', 'payment__bill', 'payment__bill__flat'
+            'payment',
+            'payment__resident',
+            'payment__resident__user',
+            'payment__bill',
+            'payment__bill__flat',
+            'payment__bill__flat__block',
+            'payment__bill__payer',
         ).order_by('-generated_at')
 
         receipt_list = []
@@ -801,18 +892,31 @@ class AllReceiptsView(APIView):
             p = r.payment
             b = p.bill if p else None
             flat = b.flat if b else (p.resident.flat if (p and p.resident) else None)
+            payer = b.payer if b else None
+            resident_user = p.resident.user if (p and p.resident) else None
             receipt_list.append({
                 'receipt_id': r.receipt_id,
                 'receipt_number': r.receipt_number,
-                'society_name': society.society_name if society else 'Zenith Square Society',
-                'society_city': society.society_city if society else 'Ahmedabad',
+                'society_name': society.society_name,
+                'society_address': society.society_address,
+                'society_city': society.society_city,
+                'society_pincode': society.society_pincode,
+                'society_email': society.society_email or '',
+                'society_phone': society.society_phone or '',
                 'generated_at': r.generated_at.strftime('%Y-%m-%d %H:%M') if r.generated_at else '',
                 'payment_id': p.payment_id if p else '',
                 'amount': float(p.amount) if p else 0.0,
                 'payment_method': p.payment_method if p else '',
-                'resident_name': p.resident.user.user_name if (p and p.resident and p.resident.user) else 'Resident',
-                'flat_number': flat.flat_number if flat else 'N/A',
-                'bill_month': b.bill_month if b else 'Maintenance'
+                'payment_date': p.payment_date.isoformat() if (p and p.payment_date) else '',
+                'payment_status': p.status if p else '',
+                'payment_type': p.payment_type if p else '',
+                'resident_name': p.resident.user.user_name if (p and p.resident and p.resident.user) else '',
+                'payer_name': payer.user_name if (payer and payer.user_name) else (
+                    resident_user.user_name if (resident_user and resident_user.user_name) else ''
+                ),
+                'flat_number': flat.flat_number if flat else '',
+                'block_name': flat.block.block_name if (flat and flat.block) else '',
+                'bill_month': b.bill_month if b else ''
             })
 
         return Response({'success': True, 'receipts': receipt_list}, status=status.HTTP_200_OK)
@@ -827,16 +931,20 @@ class SocietyBankDetailsView(APIView):
         if not society:
             return Response({'success': False, 'error': 'Society missing.'}, status=status.HTTP_404_NOT_FOUND)
 
-        bank_data = {
-            'account_name': society.society_name + ' Maintenance Fund A/C',
-            'bank_name': 'HDFC Bank Ltd',
-            'account_number': '5010098273641',
-            'ifsc_code': 'HDFC0001890',
-            'branch': society.society_city + ' Branch',
-            'upi_id': society.society_name.lower().replace(' ', '') + '@hdfcbank',
+        bank_details = SocietyBankDetails.objects.filter(society=society).first()
+        bank_data = SocietyBankDetailsSerializer(bank_details).data if bank_details else {
+            'account_name': '',
+            'bank_name': '',
+            'account_number': '',
+            'ifsc_code': '',
+            'branch': '',
+            'upi_id': '',
+        }
+        bank_data.update({
+            'configured': bank_details is not None,
             'standard_rate': float(society.standard_rate or 0),
             'billing_cycle': society.billing_cycle or 'Monthly',
-        }
+        })
         return Response({'success': True, 'bank_details': bank_data}, status=status.HTTP_200_OK)
 
     def post(self, request):
@@ -844,7 +952,27 @@ class SocietyBankDetailsView(APIView):
         if role_name not in ['chairman', 'secretary', 'admin', 'treasurer']:
             return Response({'success': False, 'error': 'Unauthorized.'}, status=status.HTTP_403_FORBIDDEN)
 
-        return Response({'success': True, 'message': 'Bank details updated successfully!'}, status=status.HTTP_200_OK)
+        society = request.user.society
+        if not society:
+            return Response({'success': False, 'error': 'Society missing.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = SocietyBankDetailsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        bank_details, created = SocietyBankDetails.objects.update_or_create(
+            society=society,
+            defaults=serializer.validated_data,
+        )
+        return Response({
+            'success': True,
+            'message': 'Bank details saved successfully.',
+            'bank_details': {
+                **SocietyBankDetailsSerializer(bank_details).data,
+                'configured': True,
+                'standard_rate': float(society.standard_rate or 0),
+                'billing_cycle': society.billing_cycle or 'Monthly',
+            },
+            'created': created,
+        }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
 
 # 12. Block Maintenance Report (For Block Secretary & Chairman)
@@ -855,19 +983,21 @@ class BlockMaintenanceReportView(APIView):
         user = request.user
         role_name = user.role.role_name.lower() if user.role else ''
 
-        # Authorized roles: Block Secretary, Chairman, Secretary, Admin
         if role_name not in ['block_secretary', 'block secretary', 'chairman', 'secretary', 'admin']:
             return Response({'success': False, 'error': 'Unauthorized.'}, status=status.HTTP_403_FORBIDDEN)
 
-        # Get the block belonging to the logged-in user's flat
-        resident = Resident.objects.filter(user=user).first()
+        resident = Resident.objects.filter(user=user).select_related(
+            'flat__block'
+        ).first()
         if not resident or not resident.flat or not resident.flat.block:
             return Response({'success': False, 'error': 'User block context missing.'}, status=status.HTTP_404_NOT_FOUND)
 
         user_block = resident.flat.block
-        bill_month = request.query_params.get('bill_month', datetime.now().strftime('%B %Y'))
+        bill_month = (
+            request.query_params.get('bill_month', '').strip()
+            or datetime.now().strftime('%B %Y')
+        )
 
-        # Fetch all flats in the block and sort numerically
         flats = list(Flats.objects.filter(block=user_block))
 
         def extract_flat_num(flat):
@@ -875,28 +1005,55 @@ class BlockMaintenanceReportView(APIView):
             return int(numbers[0]) if numbers else 0
 
         flats.sort(key=extract_flat_num)
-        
+
         report_data = []
         paid_count = 0
         pending_count = 0
+        unbilled_count = 0
 
         for flat in flats:
-            bill = MaintenanceBill.objects.filter(flat=flat, bill_month__icontains=bill_month).first()
+            bill = MaintenanceBill.objects.filter(
+                flat=flat,
+                bill_month__iexact=bill_month,
+            ).order_by('-due_date').first()
             primary_occ = Occupancy.objects.filter(flat=flat, is_primary=True).select_related('resident__user').first()
-            resident_name = primary_occ.resident.user.user_name if (primary_occ and primary_occ.resident and primary_occ.resident.user) else 'N/A'
+            if primary_occ and primary_occ.resident and primary_occ.resident.user:
+                resident = primary_occ.resident
+            else:
+                resident = Resident.objects.filter(
+                    flat=flat,
+                    user__isnull=False,
+                ).order_by('-move_in_date', '-resident_id').select_related('user').first()
+            resident_name = (
+                resident.user.user_name
+                if resident and resident.user
+                else (bill.payer.user_name if bill and bill.payer else 'N/A')
+            )
 
-            bill_status = bill.status if bill else 'unbilled'
+            bill_status = (
+                bill.status.strip().lower()
+                if bill and bill.status
+                else 'unbilled'
+            )
             if bill_status == 'paid':
                 paid_count += 1
             elif bill_status == 'pending':
                 pending_count += 1
+            else:
+                unbilled_count += 1
+
+            base_amt = Decimal(str(bill.payable_amount)) if bill else Decimal('0.00')
+            late_fee = _get_bill_late_fee(bill) if bill else Decimal('0.00')
+            total_payable_amt = base_amt + late_fee
 
             report_data.append({
                 'flat_id': flat.flat_id,
                 'flat_number': flat.flat_number,
                 'resident_name': resident_name,
                 'bill_month': bill_month,
-                'payable_amount': float(bill.payable_amount) if bill else 0.0,
+                'payable_amount': float(base_amt),
+                'late_fee_amount': float(late_fee),
+                'total_payable': float(total_payable_amt),
                 'status': bill_status,
                 'due_date': str(bill.due_date) if bill else '--',
             })
@@ -909,6 +1066,7 @@ class BlockMaintenanceReportView(APIView):
                 'total_flats': len(flats),
                 'paid_count': paid_count,
                 'pending_count': pending_count,
+                'unbilled_count': unbilled_count,
                 'collection_rate': round((paid_count / len(flats) * 100), 1) if flats else 0.0
             },
             'bills': report_data

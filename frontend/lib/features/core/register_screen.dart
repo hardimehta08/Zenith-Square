@@ -20,6 +20,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  final _phoneFocusNode = FocusNode();
+  final _emailFocusNode = FocusNode();
+  final _flatFocusNode = FocusNode();
+  final _passwordFocusNode = FocusNode();
+  final _confirmPasswordFocusNode = FocusNode();
+
+  bool _areAllFieldsFilled() {
+    return _nameController.text.trim().isNotEmpty &&
+        _phoneController.text.trim().isNotEmpty &&
+        _emailController.text.trim().isNotEmpty &&
+        _selectedSocietyId != null &&
+        _selectedBlockId != null &&
+        _flatController.text.trim().isNotEmpty &&
+        _passwordController.text.isNotEmpty &&
+        _confirmPasswordController.text.isNotEmpty;
+  }
+
   List<Society> _societies = [];
   List<Block> _blocks = [];
 
@@ -150,6 +167,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _flatController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _phoneFocusNode.dispose();
+    _emailFocusNode.dispose();
+    _flatFocusNode.dispose();
+    _passwordFocusNode.dispose();
+    _confirmPasswordFocusNode.dispose();
     super.dispose();
   }
 
@@ -180,6 +202,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     border: OutlineInputBorder(),
                     counterText: '',
                   ),
+                  onFieldSubmitted: (_) {
+                    if (_areAllFieldsFilled()) {
+                      if (!_isSubmitting) _handleRegister();
+                    } else {
+                      FocusScope.of(context).requestFocus(_phoneFocusNode);
+                    }
+                  },
                   validator: (v) {
                     final val = v?.trim() ?? '';
                     if (val.isEmpty) return 'Please enter your full name';
@@ -195,6 +224,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _phoneController,
+                  focusNode: _phoneFocusNode,
                   keyboardType: TextInputType.phone,
                   maxLength: 10,
                   textInputAction: TextInputAction.next,
@@ -208,6 +238,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     border: OutlineInputBorder(),
                     counterText: '',
                   ),
+                  onFieldSubmitted: (_) {
+                    if (_areAllFieldsFilled()) {
+                      if (!_isSubmitting) _handleRegister();
+                    } else {
+                      FocusScope.of(context).requestFocus(_emailFocusNode);
+                    }
+                  },
                   validator: (v) {
                     final val = v?.trim() ?? '';
                     if (val.isEmpty) return 'Please enter phone number';
@@ -223,6 +260,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _emailController,
+                  focusNode: _emailFocusNode,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   inputFormatters: [
@@ -233,6 +271,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     prefixIcon: Icon(Icons.email_outlined),
                     border: OutlineInputBorder(),
                   ),
+                  onFieldSubmitted: (_) {
+                    if (_areAllFieldsFilled()) {
+                      if (!_isSubmitting) _handleRegister();
+                    } else if (_selectedSocietyId != null &&
+                        _selectedBlockId != null) {
+                      FocusScope.of(context).requestFocus(_flatFocusNode);
+                    } else {
+                      FocusScope.of(context).nextFocus();
+                    }
+                  },
                   validator: (v) {
                     final val = v?.trim() ?? '';
                     if (val.isEmpty) return 'Email address is required';
@@ -314,6 +362,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _flatController,
+                  focusNode: _flatFocusNode,
                   textInputAction: TextInputAction.next,
                   maxLength: 10,
                   decoration: const InputDecoration(
@@ -322,6 +371,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     border: OutlineInputBorder(),
                     counterText: '',
                   ),
+                  onFieldSubmitted: (_) {
+                    if (_areAllFieldsFilled()) {
+                      if (!_isSubmitting) _handleRegister();
+                    } else {
+                      FocusScope.of(context).requestFocus(_passwordFocusNode);
+                    }
+                  },
                   validator: (v) => (v == null || v.trim().isEmpty)
                       ? 'Please enter flat number'
                       : null,
@@ -332,6 +388,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _passwordController,
+                  focusNode: _passwordFocusNode,
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.next,
                   decoration: InputDecoration(
@@ -348,6 +405,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
+                  onFieldSubmitted: (_) {
+                    if (_areAllFieldsFilled()) {
+                      if (!_isSubmitting) _handleRegister();
+                    } else {
+                      FocusScope.of(context)
+                          .requestFocus(_confirmPasswordFocusNode);
+                    }
+                  },
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Please enter password';
                     if (v.length < 6) {
@@ -362,6 +427,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _confirmPasswordController,
+                  focusNode: _confirmPasswordFocusNode,
                   obscureText: _obscureConfirmPassword,
                   textInputAction: TextInputAction.done,
                   decoration: InputDecoration(
@@ -380,6 +446,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                   ),
+                  onFieldSubmitted: (_) {
+                    if (!_isSubmitting) _handleRegister();
+                  },
                   validator: (v) {
                     if (v == null || v.isEmpty) {
                       return 'Please confirm password';

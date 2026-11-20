@@ -98,6 +98,8 @@ class MyApp extends StatelessWidget {
         '/nominee': (context) => const NomineeScreen(),
         '/change-password': (context) => const ChangePasswordScreen(),
         '/finance': (context) => const FinanceScreen(),
+        '/treasurer-pay-maintenance': (context) =>
+            const FinanceScreen(showSocietyLedgerTabs: false),
         '/complaints': (context) => const ComplaintsScreen(),
         '/notices': (context) => const NoticesScreen(),
         '/amenities': (context) => const AmenitiesScreen(),

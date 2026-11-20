@@ -97,6 +97,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                   controller: _otpController,
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.center,
+                  textInputAction: TextInputAction.done,
                   style: const TextStyle(
                     fontSize: 24,
                     letterSpacing: 8,
@@ -111,6 +112,9 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                     hintStyle: TextStyle(letterSpacing: 8, color: Colors.grey),
                     border: OutlineInputBorder(),
                   ),
+                  onFieldSubmitted: (_) {
+                    if (!_isSubmitting) _handleVerify();
+                  },
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) {
                       return 'Please enter the OTP';

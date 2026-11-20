@@ -146,7 +146,9 @@ class FinanceApiService {
     } else {
       try {
         final data = jsonDecode(res.body);
-        throw Exception(data['error'] ?? 'Server returned error (${res.statusCode})');
+        throw Exception(
+          data['error'] ?? 'Server returned error (${res.statusCode})',
+        );
       } catch (_) {
         throw Exception('Server error (${res.statusCode}). Please try again.');
       }
@@ -255,10 +257,7 @@ class FinanceApiService {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: jsonEncode({
-        'bill_id': billId,
-        'payment_method': paymentMethod,
-      }),
+      body: jsonEncode({'bill_id': billId, 'payment_method': paymentMethod}),
     );
     final data = jsonDecode(res.body);
     if (res.statusCode == 201 && data['success'] == true) {
@@ -304,11 +303,65 @@ class FinanceApiService {
     }
   }
 
-  // 14. Block Secretary: Fetch Block Maintenance Report
-  static Future<Map<String, dynamic>> fetchBlockReport() async {
+  static Future<Map<String, dynamic>> saveBankDetails({
+    required String accountName,
+    required String bankName,
+    required String accountNumber,
+    required String ifscCode,
+    required String branch,
+    String upiId = '',
+  }) async {
     final token = await ApiService.getAccessToken();
+    final res = await http.post(
+      Uri.parse('$baseUrl/bank-details/'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'account_name': accountName,
+        'bank_name': bankName,
+        'account_number': accountNumber,
+        'ifsc_code': ifscCode,
+        'branch': branch,
+        'upi_id': upiId,
+      }),
+    );
+    final data = jsonDecode(res.body);
+    if ((res.statusCode == 200 || res.statusCode == 201) &&
+        data['success'] == true) {
+      return data['bank_details'] ?? {};
+    }
+
+    final message = data['error'] ?? data['detail'];
+    if (message != null) throw Exception(message.toString());
+
+    final validationError = data.entries
+        .where((entry) => entry.key != 'success')
+        .map((entry) {
+          final value = entry.value;
+          final message = value is List && value.isNotEmpty
+              ? value.first.toString()
+              : value.toString();
+          return '${entry.key}: $message';
+        })
+        .firstWhere(
+          (value) => value.isNotEmpty,
+          orElse: () => 'Failed to save bank details',
+        );
+    throw Exception(validationError);
+  }
+
+  // 14. Block Secretary: Fetch Block Maintenance Report
+  static Future<Map<String, dynamic>> fetchBlockReport({
+    required String billMonth,
+  }) async {
+    final token = await ApiService.getAccessToken();
+    final uri = Uri.parse(
+      '$baseUrl/block-report/',
+    ).replace(queryParameters: {'bill_month': billMonth});
     final res = await http.get(
-      Uri.parse('$baseUrl/block-report/'),
+      uri,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -322,4 +375,3 @@ class FinanceApiService {
     }
   }
 }
-

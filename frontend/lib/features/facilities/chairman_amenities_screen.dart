@@ -76,7 +76,23 @@ class _ChairmanBookingApprovalsTab extends StatefulWidget {
 class _ChairmanBookingApprovalsTabState
     extends State<_ChairmanBookingApprovalsTab> {
   late Future<List<dynamic>> _bookingsFuture;
-  String _selectedFilter = 'all';
+  String _selectedFilter = 'upcoming';
+  DateTime? _selectedMonth;
+
+  static const _monthNames = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
 
   @override
   void initState() {
@@ -88,6 +104,88 @@ class _ChairmanBookingApprovalsTabState
     setState(() {
       _bookingsFuture = FacilitiesApiService.fetchSocietyBookings();
     });
+  }
+
+  Future<void> _selectMonth() async {
+    final now = DateTime.now();
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: _selectedMonth ?? now,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(now.year + 5),
+      helpText: 'Select a month to view bookings',
+    );
+    if (selected == null || !mounted) return;
+    setState(() {
+      _selectedMonth = DateTime(selected.year, selected.month);
+      if (_selectedFilter == 'upcoming') {
+        _selectedFilter = 'all';
+      }
+    });
+  }
+
+  String _formatMonth(DateTime month) =>
+      '${_monthNames[month.month - 1]} ${month.year}';
+
+  String _bookingStatus(dynamic value) {
+    final status = (value ?? '').toString().trim().toLowerCase();
+    return status == 'pending_pyment' ? 'pending_payment' : status;
+  }
+
+  bool _isCurrentOrUpcomingBooking(DateTime? bookingDate, dynamic endTime) {
+    if (bookingDate == null) return false;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    if (bookingDate.isAfter(today)) return true;
+    if (bookingDate.isBefore(today)) return false;
+
+    final parts = (endTime ?? '').toString().split(':');
+    if (parts.length != 2) return true;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null ||
+        minute == null ||
+        hour < 0 ||
+        hour > 23 ||
+        minute < 0 ||
+        minute > 59) {
+      return true;
+    }
+
+    final bookingEnd = DateTime(
+      today.year,
+      today.month,
+      today.day,
+      hour,
+      minute,
+    );
+    return bookingEnd.isAfter(now);
+  }
+
+  String _formatBookingDate(dynamic value) {
+    final parsed = DateTime.tryParse(value?.toString() ?? '');
+    if (parsed == null) return value?.toString() ?? '--';
+    return MaterialLocalizations.of(context).formatMediumDate(parsed);
+  }
+
+  String _formatBookingTime(dynamic value) {
+    final text = value?.toString() ?? '';
+    final parts = text.split(':');
+    if (parts.length != 2) return text;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null ||
+        minute == null ||
+        hour < 0 ||
+        hour > 23 ||
+        minute < 0 ||
+        minute > 59) {
+      return text;
+    }
+    return MaterialLocalizations.of(
+      context,
+    ).formatTimeOfDay(TimeOfDay(hour: hour, minute: minute));
   }
 
   Future<void> _handleConfirmPayment(String bookingId) async {
@@ -321,11 +419,96 @@ class _ChairmanBookingApprovalsTabState
   Widget build(BuildContext context) {
     return Column(
       children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          child: Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.grey.shade300),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: Colors.indigo.shade50,
+                        child: Icon(
+                          Icons.event_available_outlined,
+                          color: Colors.indigo.shade700,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _selectedMonth != null
+                                  ? 'Bookings for ${_formatMonth(_selectedMonth!)}'
+                                  : _selectedFilter == 'upcoming'
+                                  ? 'Upcoming bookings'
+                                  : 'Booking history',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              _selectedMonth == null &&
+                                      _selectedFilter == 'upcoming'
+                                  ? 'Past and expired bookings stay available in history.'
+                                  : 'Filter by month and status to find a booking.',
+                              style: TextStyle(
+                                color: Colors.grey.shade700,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: _selectMonth,
+                        icon: const Icon(Icons.calendar_month_outlined),
+                        label: Text(
+                          _selectedMonth == null
+                              ? 'Filter by month'
+                              : _formatMonth(_selectedMonth!),
+                        ),
+                      ),
+                      if (_selectedMonth != null)
+                        TextButton.icon(
+                          onPressed: () => setState(() {
+                            _selectedMonth = null;
+                          }),
+                          icon: const Icon(Icons.clear),
+                          label: const Text('Show all dates'),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
           child: Row(
             children: [
+              _buildFilterChip('upcoming', 'Upcoming'),
+              const SizedBox(width: 8),
               _buildFilterChip('all', 'All Bookings'),
               const SizedBox(width: 8),
               _buildFilterChip('pending_payment', 'Pending Payment (Hold)'),
@@ -368,9 +551,38 @@ class _ChairmanBookingApprovalsTabState
 
               final all = snapshot.data ?? [];
               final filtered = all.where((b) {
-                if (_selectedFilter == 'all') return true;
-                final status = (b['status'] ?? '').toString().toLowerCase();
+                final status = _bookingStatus(b['status']);
                 final isExpired = b['is_payment_expired'] == true;
+                final bookingDateValue = DateTime.tryParse(
+                  (b['booking_date'] ?? '').toString(),
+                );
+                final bookingDate = bookingDateValue == null
+                    ? null
+                    : DateTime(
+                        bookingDateValue.year,
+                        bookingDateValue.month,
+                        bookingDateValue.day,
+                      );
+
+                if (_selectedMonth != null) {
+                  if (bookingDate == null ||
+                      bookingDate.year != _selectedMonth!.year ||
+                      bookingDate.month != _selectedMonth!.month) {
+                    return false;
+                  }
+                }
+
+                if (_selectedFilter == 'upcoming') {
+                  return _isCurrentOrUpcomingBooking(
+                        bookingDate,
+                        b['end_time'],
+                      ) &&
+                      status != 'expired' &&
+                      status != 'cancelled' &&
+                      !isExpired;
+                }
+
+                if (_selectedFilter == 'all') return true;
                 if (_selectedFilter == 'expired') {
                   return status == 'expired' || isExpired;
                 }
@@ -392,11 +604,28 @@ class _ChairmanBookingApprovalsTabState
                       ),
                       const SizedBox(height: 12),
                       const Text(
-                        'No bookings match the selected criteria.',
+                        'No bookings match these filters.',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
                         ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _selectedFilter == 'upcoming' && _selectedMonth == null
+                            ? 'Try the month filter to review booking history.'
+                            : 'Adjust the month or status filter and try again.',
+                        style: TextStyle(color: Colors.grey.shade700),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: () => setState(() {
+                          _selectedFilter = 'upcoming';
+                          _selectedMonth = null;
+                        }),
+                        icon: const Icon(Icons.filter_alt_off_outlined),
+                        label: const Text('Reset filters'),
                       ),
                     ],
                   ),
@@ -407,13 +636,24 @@ class _ChairmanBookingApprovalsTabState
                 onRefresh: () async => _loadBookings(),
                 child: ListView.separated(
                   padding: const EdgeInsets.all(12.0),
-                  itemCount: filtered.length,
+                  itemCount: filtered.length + 1,
                   separatorBuilder: (ctx, i) => const SizedBox(height: 10),
                   itemBuilder: (ctx, i) {
-                    final b = filtered[i];
-                    final rawStatus = (b['status'] ?? 'pending')
-                        .toString()
-                        .toLowerCase();
+                    if (i == 0) {
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 0, 4, 2),
+                        child: Text(
+                          '${filtered.length} ${filtered.length == 1 ? 'booking' : 'bookings'}',
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      );
+                    }
+
+                    final b = filtered[i - 1];
+                    final rawStatus = _bookingStatus(b['status']);
                     final isExpired = b['is_payment_expired'] ?? false;
                     final residentName = b['resident_name'] ?? 'Resident';
                     final flatNumber = b['flat_number'] ?? '--';
@@ -440,13 +680,13 @@ class _ChairmanBookingApprovalsTabState
                     final canCancel = rawStatus == 'confirmed' || canConfirm;
 
                     return Card(
-                      elevation: 0,
+                      elevation: 1,
                       shape: RoundedRectangleBorder(
                         side: BorderSide(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.all(14.0),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -489,20 +729,46 @@ class _ChairmanBookingApprovalsTabState
                               ],
                             ),
                             const SizedBox(height: 6),
-                            Text(
-                              'Reserved By: $residentName (Flat $flatNumber)',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey.shade800,
-                              ),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.person_outline,
+                                  size: 17,
+                                  color: Colors.grey.shade700,
+                                ),
+                                const SizedBox(width: 7),
+                                Expanded(
+                                  child: Text(
+                                    '$residentName · Flat $flatNumber',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey.shade800,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Date: ${b['booking_date']}  |  Time: ${b['start_time']} - ${b['end_time']}',
-                              style: TextStyle(
-                                color: Colors.grey.shade700,
-                                fontSize: 13,
-                              ),
+                            const SizedBox(height: 7),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_today_outlined,
+                                  size: 16,
+                                  color: Colors.grey.shade700,
+                                ),
+                                const SizedBox(width: 7),
+                                Expanded(
+                                  child: Text(
+                                    '${_formatBookingDate(b['booking_date'])} · '
+                                    '${_formatBookingTime(b['start_time'])} – '
+                                    '${_formatBookingTime(b['end_time'])}',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade700,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                             if (b['payment_id'] != null &&
                                 b['payment_id'].toString().isNotEmpty)
@@ -1936,6 +2202,23 @@ class _ChairmanMyBookingsTabState extends State<_ChairmanMyBookingsTab> {
             separatorBuilder: (ctx, i) => const SizedBox(height: 8),
             itemBuilder: (ctx, i) {
               final b = bookings[i];
+              final rawStatus = (b['status'] ?? '')
+                  .toString()
+                  .trim()
+                  .toLowerCase();
+              final displayStatus = switch (rawStatus) {
+                'pending_pyment' || 'pending_payment' => 'Pending Payment',
+                'expired' => 'Expired',
+                _ =>
+                  rawStatus
+                      .split('_')
+                      .map(
+                        (word) => word.isEmpty
+                            ? word
+                            : '${word[0].toUpperCase()}${word.substring(1)}',
+                      )
+                      .join(' '),
+              };
               return Card(
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -1960,7 +2243,7 @@ class _ChairmanMyBookingsTabState extends State<_ChairmanMyBookingsTab> {
                         style: TextStyle(color: Colors.grey.shade800),
                       ),
                       Text(
-                        'Status: ${(b['status'] ?? '').toString().toUpperCase()}',
+                        'Status: $displayStatus',
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ],

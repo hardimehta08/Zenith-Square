@@ -11,6 +11,7 @@ class ComplaintsScreen extends StatefulWidget {
 
 class _ComplaintsScreenState extends State<ComplaintsScreen> {
   late Future<List<dynamic>> _complaintsFuture;
+  String _selectedFilter = 'all';
 
   @override
   void initState() {
@@ -22,6 +23,25 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
     setState(() {
       _complaintsFuture = HelpdeskApiService.fetchComplaints();
     });
+  }
+
+  Future<void> _refreshComplaints() async {
+    final complaintsFuture = HelpdeskApiService.fetchComplaints();
+    setState(() {
+      _complaintsFuture = complaintsFuture;
+    });
+    await complaintsFuture;
+  }
+
+  Widget _buildFilterChip(String value, String label) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: _selectedFilter == value,
+        onSelected: (_) => setState(() => _selectedFilter = value),
+      ),
+    );
   }
 
   Color _getStatusColor(String status) {
@@ -274,133 +294,182 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
           }
 
           final complaints = snapshot.data ?? [];
-          if (complaints.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.assignment_turned_in_outlined,
-                    size: 64,
-                    color: Colors.grey.shade400,
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'No complaints filed yet.',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Tap "New Ticket" to raise an issue.',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                  ),
-                ],
+          final filteredComplaints = complaints.where((item) {
+            if (_selectedFilter == 'all') return true;
+            return (item['status'] ?? '').toString().toLowerCase() ==
+                _selectedFilter;
+          }).toList();
+
+          return Column(
+            children: [
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                child: Row(
+                  children: [
+                    _buildFilterChip('all', 'All'),
+                    _buildFilterChip('pending', 'Pending'),
+                    _buildFilterChip('in-progress', 'In Progress'),
+                    _buildFilterChip('resolved', 'Resolved'),
+                    _buildFilterChip('rejected', 'Rejected'),
+                  ],
+                ),
               ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async => _loadComplaints(),
-            child: ListView.separated(
-              padding: const EdgeInsets.all(12.0),
-              itemCount: complaints.length,
-              separatorBuilder: (ctx, i) => const SizedBox(height: 8),
-              itemBuilder: (ctx, i) {
-                final item = complaints[i];
-                final status = (item['status'] ?? 'pending')
-                    .toString()
-                    .toUpperCase();
-                final color = _getStatusColor(item['status'] ?? 'pending');
-
-                return Card(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    side: BorderSide(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(14.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: _refreshComplaints,
+                  child: filteredComplaints.isEmpty
+                      ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
                           children: [
-                            Text(
-                              '#${item['complaint_id'] ?? ''}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                                color: Colors.grey.shade700,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                status,
-                                style: TextStyle(
-                                  color: color,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
+                            SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.6,
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.assignment_turned_in_outlined,
+                                      size: 64,
+                                      color: Colors.grey.shade400,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      complaints.isEmpty
+                                          ? 'No complaints filed yet.'
+                                          : 'No ${_selectedFilter.replaceAll('-', ' ')} complaints.',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    if (complaints.isEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Tap "New Ticket" to raise an issue.',
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                               ),
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          item['title'] ?? '',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          item['description'] ?? '',
-                          style: TextStyle(
-                            color: Colors.grey.shade800,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const Divider(height: 18),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Unit: ${item['block_name'] ?? ''} - ${item['flat_number'] ?? ''}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.all(12.0),
+                          itemCount: filteredComplaints.length,
+                          separatorBuilder: (ctx, i) =>
+                              const SizedBox(height: 8),
+                          itemBuilder: (ctx, i) {
+                            final item = filteredComplaints[i];
+                            final status = (item['status'] ?? 'pending')
+                                .toString()
+                                .toUpperCase();
+                            final color = _getStatusColor(
+                              item['status'] ?? 'pending',
+                            );
+
+                            return Card(
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                side: BorderSide(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(10),
                               ),
-                            ),
-                            Text(
-                              item['created_at'] != null
-                                  ? item['created_at'].toString().substring(
-                                      0,
-                                      10,
-                                    )
-                                  : '',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
+                              child: Padding(
+                                padding: const EdgeInsets.all(14.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          '#${item['complaint_id'] ?? ''}',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                            color: Colors.grey.shade700,
+                                          ),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 3,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: color.withValues(
+                                              alpha: 0.15,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            status,
+                                            style: TextStyle(
+                                              color: color,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      item['title'] ?? '',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      item['description'] ?? '',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade800,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    const Divider(height: 18),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Unit: ${item['block_name'] ?? ''} - ${item['flat_number'] ?? ''}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                        Text(
+                                          item['created_at'] != null
+                                              ? item['created_at']
+                                                    .toString()
+                                                    .substring(0, 10)
+                                              : '',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            );
+                          },
                         ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+                ),
+              ),
+            ],
           );
         },
       ),

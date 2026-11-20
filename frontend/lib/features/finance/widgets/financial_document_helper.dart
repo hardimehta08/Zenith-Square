@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../../../utils/file_download_helper.dart';
 
 enum FinancialDocumentType {
@@ -15,7 +16,11 @@ class FinancialDocument {
   final String docNumber;
   final String title;
   final String societyName;
+  final String societyAddress;
   final String societyCity;
+  final String societyPincode;
+  final String societyEmail;
+  final String societyPhone;
   final String categoryOrHead;
   final double amount;
   final String date;
@@ -29,17 +34,89 @@ class FinancialDocument {
     required this.type,
     required this.docNumber,
     required this.title,
-    this.societyName = 'Zenith Square Co-Op Housing Society Ltd.',
-    this.societyCity = 'Ahmedabad, Gujarat',
+    this.societyName = '',
+    this.societyAddress = '',
+    this.societyCity = '',
+    this.societyPincode = '',
+    this.societyEmail = '',
+    this.societyPhone = '',
     required this.categoryOrHead,
     required this.amount,
     required this.date,
     required this.status,
     required this.payerOrPayee,
-    this.paymentMethod = 'ONLINE / BANK TRANSFER',
+    this.paymentMethod = '',
     this.description = '',
     this.extraDetails = const {},
   });
+
+  factory FinancialDocument.fromPaymentReceipt(Map<String, dynamic> receipt) {
+    String value(String key) => receipt[key]?.toString().trim() ?? '';
+
+    final amountValue = receipt['amount'];
+    final amount = amountValue is num
+        ? amountValue.toDouble()
+        : double.tryParse(value('amount')) ?? 0;
+    final month = value('bill_month');
+    final flatNumber = value('flat_number');
+    final payerName = value('payer_name');
+    final rawDate = value('payment_date').isNotEmpty
+        ? value('payment_date')
+        : value('generated_at');
+    final parsedDate = DateTime.tryParse(rawDate);
+    final transactionDate = parsedDate == null
+        ? rawDate
+        : parsedDate.toLocal().toIso8601String().substring(0, 10);
+    final details = <String, String>{};
+
+    void addDetail(String label, String key) {
+      final detail = value(key);
+      if (detail.isNotEmpty) details[label] = detail;
+    }
+
+    addDetail('Receipt Number', 'receipt_number');
+    addDetail('Billing Cycle', 'bill_month');
+    addDetail('Payment ID', 'payment_id');
+    addDetail('Payment Type', 'payment_type');
+    addDetail('Flat Number', 'flat_number');
+    addDetail('Block', 'block_name');
+
+    return FinancialDocument(
+      type: FinancialDocumentType.paymentReceipt,
+      docNumber: value('receipt_number'),
+      title: 'MAINTENANCE PAYMENT RECEIPT',
+      societyName: value('society_name'),
+      societyAddress: value('society_address'),
+      societyCity: value('society_city'),
+      societyPincode: value('society_pincode'),
+      societyEmail: value('society_email'),
+      societyPhone: value('society_phone'),
+      categoryOrHead: month.isEmpty
+          ? 'Maintenance Charges'
+          : 'Maintenance Charges ($month)',
+      amount: amount,
+      date: transactionDate,
+      status: value('payment_status'),
+      payerOrPayee: payerName.isEmpty
+          ? ''
+          : flatNumber.isEmpty
+          ? payerName
+          : '$payerName (Flat $flatNumber)',
+      paymentMethod: value('payment_method'),
+      extraDetails: details,
+    );
+  }
+
+  String get societyLocation => [
+    societyAddress,
+    societyCity,
+    societyPincode,
+  ].where((part) => part.trim().isNotEmpty).join(', ');
+
+  String get societyContact => [
+    societyPhone,
+    societyEmail,
+  ].where((part) => part.trim().isNotEmpty).join(' | ');
 
   bool get isIncome =>
       type == FinancialDocumentType.societyIncome ||
@@ -83,8 +160,14 @@ class FinancialDocumentHelper {
   }
 
   /// Download the document directly as an official PDF file (not HTML)
-  static Future<void> downloadDocument(BuildContext context, FinancialDocument doc) async {
-    final cleanDocNo = doc.docNumber.replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_');
+  static Future<void> downloadDocument(
+    BuildContext context,
+    FinancialDocument doc,
+  ) async {
+    final cleanDocNo = doc.docNumber.replaceAll(
+      RegExp(r'[^a-zA-Z0-9_\-]'),
+      '_',
+    );
     final fileName = '${doc.type.name.toUpperCase()}_$cleanDocNo.pdf';
 
     try {
@@ -109,14 +192,22 @@ class FinancialDocumentHelper {
           content: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
+              const Icon(
+                Icons.check_circle_outline,
+                color: Colors.white,
+                size: 18,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Downloaded $fileName',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white, fontSize: 13),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             ],
@@ -164,12 +255,38 @@ class FinancialDocumentHelper {
     if (n == 0) return 'Zero Rupees Only';
 
     final units = [
-      '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-      'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
-      'Seventeen', 'Eighteen', 'Nineteen'
+      '',
+      'One',
+      'Two',
+      'Three',
+      'Four',
+      'Five',
+      'Six',
+      'Seven',
+      'Eight',
+      'Nine',
+      'Ten',
+      'Eleven',
+      'Twelve',
+      'Thirteen',
+      'Fourteen',
+      'Fifteen',
+      'Sixteen',
+      'Seventeen',
+      'Eighteen',
+      'Nineteen',
     ];
     final tens = [
-      '', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'
+      '',
+      '',
+      'Twenty',
+      'Thirty',
+      'Forty',
+      'Fifty',
+      'Sixty',
+      'Seventy',
+      'Eighty',
+      'Ninety',
     ];
 
     String convertLessThanThousand(int val) {
@@ -209,10 +326,21 @@ class FinancialDocumentHelper {
 
   /// Generate high-resolution, vector-crisp PDF document bytes
   static Future<List<int>> generatePdfBytes(FinancialDocument doc) async {
-    final pdf = pw.Document();
+    final pdf = pw.Document(
+      theme: pw.ThemeData.withFont(
+        base: await PdfGoogleFonts.notoSansRegular(),
+        bold: await PdfGoogleFonts.notoSansBold(),
+        italic: await PdfGoogleFonts.notoSansItalic(),
+        boldItalic: await PdfGoogleFonts.notoSansBoldItalic(),
+      ),
+    );
     final isIncome = doc.isIncome;
-    final primaryColor = isIncome ? PdfColor.fromInt(0xFF00796B) : PdfColor.fromInt(0xFFC62828);
-    final badgeBg = isIncome ? PdfColor.fromInt(0xFFE0F2F1) : PdfColor.fromInt(0xFFFFEBEE);
+    final primaryColor = isIncome
+        ? PdfColor.fromInt(0xFF00796B)
+        : PdfColor.fromInt(0xFFC62828);
+    final badgeBg = isIncome
+        ? PdfColor.fromInt(0xFFE0F2F1)
+        : PdfColor.fromInt(0xFFFFEBEE);
     final words = numberToWords(doc.amount);
 
     pdf.addPage(
@@ -247,23 +375,36 @@ class FinancialDocumentHelper {
                             ),
                           ),
                           pw.SizedBox(height: 3),
-                          pw.Text(
-                            'Treasury & Financial Management | ${doc.societyCity}',
-                            style: pw.TextStyle(fontSize: 9.5, color: PdfColors.grey700),
-                          ),
-                          pw.Text(
-                            'Registration No: SOC/GJ/AHM/2024/0981 | Contact: accounts@zenithsquare.com',
-                            style: pw.TextStyle(fontSize: 8.5, color: PdfColors.grey600),
-                          ),
+                          if (doc.societyLocation.isNotEmpty)
+                            pw.Text(
+                              doc.societyLocation,
+                              style: pw.TextStyle(
+                                fontSize: 9.5,
+                                color: PdfColors.grey700,
+                              ),
+                            ),
+                          if (doc.societyContact.isNotEmpty)
+                            pw.Text(
+                              doc.societyContact,
+                              style: pw.TextStyle(
+                                fontSize: 8.5,
+                                color: PdfColors.grey600,
+                              ),
+                            ),
                         ],
                       ),
                     ),
                     pw.Container(
-                      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const pw.EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
                       decoration: pw.BoxDecoration(
                         color: badgeBg,
                         border: pw.Border.all(color: primaryColor, width: 1),
-                        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
+                        borderRadius: const pw.BorderRadius.all(
+                          pw.Radius.circular(12),
+                        ),
                       ),
                       child: pw.Text(
                         doc.status.toUpperCase(),
@@ -282,10 +423,15 @@ class FinancialDocumentHelper {
 
                 // 2. Document Meta Ribbon
                 pw.Container(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const pw.EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: pw.BoxDecoration(
                     color: PdfColors.grey100,
-                    border: pw.Border(left: pw.BorderSide(color: primaryColor, width: 4)),
+                    border: pw.Border(
+                      left: pw.BorderSide(color: primaryColor, width: 4),
+                    ),
                   ),
                   child: pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -293,25 +439,61 @@ class FinancialDocumentHelper {
                       pw.Column(
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
-                          pw.Text('DOCUMENT TYPE', style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600)),
+                          pw.Text(
+                            'DOCUMENT TYPE',
+                            style: pw.TextStyle(
+                              fontSize: 7.5,
+                              color: PdfColors.grey600,
+                            ),
+                          ),
                           pw.SizedBox(height: 2),
-                          pw.Text(doc.title, style: pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold)),
+                          pw.Text(
+                            doc.title,
+                            style: pw.TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: pw.FontWeight.bold,
+                            ),
+                          ),
                         ],
                       ),
                       pw.Column(
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
-                          pw.Text('RECEIPT / VOUCHER NO.', style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600)),
+                          pw.Text(
+                            'RECEIPT / VOUCHER NO.',
+                            style: pw.TextStyle(
+                              fontSize: 7.5,
+                              color: PdfColors.grey600,
+                            ),
+                          ),
                           pw.SizedBox(height: 2),
-                          pw.Text(doc.docNumber, style: pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold)),
+                          pw.Text(
+                            doc.docNumber,
+                            style: pw.TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: pw.FontWeight.bold,
+                            ),
+                          ),
                         ],
                       ),
                       pw.Column(
                         crossAxisAlignment: pw.CrossAxisAlignment.end,
                         children: [
-                          pw.Text('TRANSACTION DATE', style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600)),
+                          pw.Text(
+                            'TRANSACTION DATE',
+                            style: pw.TextStyle(
+                              fontSize: 7.5,
+                              color: PdfColors.grey600,
+                            ),
+                          ),
                           pw.SizedBox(height: 2),
-                          pw.Text(doc.date, style: pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold)),
+                          pw.Text(
+                            doc.date,
+                            style: pw.TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: pw.FontWeight.bold,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -323,30 +505,46 @@ class FinancialDocumentHelper {
                 pw.Table(
                   border: pw.TableBorder(
                     bottom: pw.BorderSide(color: PdfColors.grey200, width: 0.5),
-                    horizontalInside: pw.BorderSide(color: PdfColors.grey200, width: 0.5),
+                    horizontalInside: pw.BorderSide(
+                      color: PdfColors.grey200,
+                      width: 0.5,
+                    ),
                   ),
                   columnWidths: {
                     0: const pw.FlexColumnWidth(3.5),
                     1: const pw.FlexColumnWidth(6.5),
                   },
                   children: [
-                    _pdfTableRow(isIncome ? 'Received From / Head' : 'Paid To / Head', doc.categoryOrHead),
-                    _pdfTableRow('Payer / Beneficiary Details', doc.payerOrPayee.isNotEmpty ? doc.payerOrPayee : 'Society Treasury Fund'),
+                    _pdfTableRow(
+                      isIncome ? 'Received From / Head' : 'Paid To / Head',
+                      doc.categoryOrHead,
+                    ),
+                    _pdfTableRow(
+                      'Payer / Beneficiary Details',
+                      doc.payerOrPayee,
+                    ),
                     _pdfTableRow('Payment Mode', doc.paymentMethod),
                     if (doc.description.isNotEmpty)
                       _pdfTableRow('Particulars / Remarks', doc.description),
-                    ...doc.extraDetails.entries.map((e) => _pdfTableRow(e.key, e.value)),
+                    ...doc.extraDetails.entries.map(
+                      (e) => _pdfTableRow(e.key, e.value),
+                    ),
                   ],
                 ),
                 pw.SizedBox(height: 16),
 
                 // 4. Amount Box
                 pw.Container(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const pw.EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   decoration: pw.BoxDecoration(
                     color: badgeBg,
                     border: pw.Border.all(color: primaryColor, width: 1.2),
-                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+                    borderRadius: const pw.BorderRadius.all(
+                      pw.Radius.circular(6),
+                    ),
                   ),
                   child: pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -358,19 +556,31 @@ class FinancialDocumentHelper {
                           children: [
                             pw.Text(
                               'TOTAL AMOUNT ${isIncome ? 'RECEIVED' : 'DISBURSED'}',
-                              style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold, color: primaryColor),
+                              style: pw.TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: pw.FontWeight.bold,
+                                color: primaryColor,
+                              ),
                             ),
                             pw.SizedBox(height: 3),
                             pw.Text(
                               words,
-                              style: pw.TextStyle(fontSize: 8.5, fontStyle: pw.FontStyle.italic, color: PdfColors.grey800),
+                              style: pw.TextStyle(
+                                fontSize: 8.5,
+                                fontStyle: pw.FontStyle.italic,
+                                color: PdfColors.grey800,
+                              ),
                             ),
                           ],
                         ),
                       ),
                       pw.Text(
-                        'INR ${doc.amount.toStringAsFixed(2)}',
-                        style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: primaryColor),
+                        '\u20B9 ${doc.amount.toStringAsFixed(2)}',
+                        style: pw.TextStyle(
+                          fontSize: 18,
+                          fontWeight: pw.FontWeight.bold,
+                          color: primaryColor,
+                        ),
                       ),
                     ],
                   ),
@@ -395,26 +605,75 @@ class FinancialDocumentHelper {
                         child: pw.Column(
                           mainAxisAlignment: pw.MainAxisAlignment.center,
                           children: [
-                            pw.Text('ZENITH SQUARE', style: pw.TextStyle(fontSize: 5.5, fontWeight: pw.FontWeight.bold, color: primaryColor)),
-                            pw.Text('OFFICIAL SEAL', style: pw.TextStyle(fontSize: 5, fontWeight: pw.FontWeight.bold, color: primaryColor)),
-                            pw.Text('VERIFIED', style: pw.TextStyle(fontSize: 5.5, fontWeight: pw.FontWeight.bold, color: primaryColor)),
+                            pw.Text(
+                              doc.societyName.toUpperCase(),
+                              style: pw.TextStyle(
+                                fontSize: 5.5,
+                                fontWeight: pw.FontWeight.bold,
+                                color: primaryColor,
+                              ),
+                            ),
+                            pw.Text(
+                              'OFFICIAL SEAL',
+                              style: pw.TextStyle(
+                                fontSize: 5,
+                                fontWeight: pw.FontWeight.bold,
+                                color: primaryColor,
+                              ),
+                            ),
+                            pw.Text(
+                              doc.status.toUpperCase(),
+                              style: pw.TextStyle(
+                                fontSize: 5.5,
+                                fontWeight: pw.FontWeight.bold,
+                                color: primaryColor,
+                              ),
+                            ),
                           ],
                         ),
                       ),
                     ),
                     pw.Column(
                       children: [
-                        pw.Text('This is a computer-generated verified document.', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
-                        pw.Text('No physical signature required.', style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey500)),
+                        pw.Text(
+                          'This is a computer-generated verified document.',
+                          style: pw.TextStyle(
+                            fontSize: 8,
+                            color: PdfColors.grey600,
+                          ),
+                        ),
+                        pw.Text(
+                          'No physical signature required.',
+                          style: pw.TextStyle(
+                            fontSize: 7.5,
+                            color: PdfColors.grey500,
+                          ),
+                        ),
                       ],
                     ),
                     pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.center,
                       children: [
-                        pw.Container(width: 130, height: 1, color: PdfColors.grey800),
+                        pw.Container(
+                          width: 130,
+                          height: 1,
+                          color: PdfColors.grey800,
+                        ),
                         pw.SizedBox(height: 3),
-                        pw.Text('Authorized Signatory / Treasurer', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold)),
-                        pw.Text('Zenith Square Co-Op Housing Society', style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
+                        pw.Text(
+                          'Authorized Signatory / Treasurer',
+                          style: pw.TextStyle(
+                            fontSize: 8.5,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                        pw.Text(
+                          doc.societyName,
+                          style: pw.TextStyle(
+                            fontSize: 7.5,
+                            color: PdfColors.grey700,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -434,11 +693,21 @@ class FinancialDocumentHelper {
       children: [
         pw.Padding(
           padding: const pw.EdgeInsets.symmetric(vertical: 5, horizontal: 8),
-          child: pw.Text(label, style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+          child: pw.Text(
+            label,
+            style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+          ),
         ),
         pw.Padding(
           padding: const pw.EdgeInsets.symmetric(vertical: 5, horizontal: 8),
-          child: pw.Text(value, style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.black)),
+          child: pw.Text(
+            value,
+            style: pw.TextStyle(
+              fontSize: 9,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.black,
+            ),
+          ),
         ),
       ],
     );
@@ -451,14 +720,16 @@ class FinancialDocumentHelper {
     final badgeBgHex = isIncome ? '#E0F2F1' : '#FFEBEE';
     final words = numberToWords(doc.amount);
 
-    final extraRows = doc.extraDetails.entries.map((e) {
-      return '''
+    final extraRows = doc.extraDetails.entries
+        .map((e) {
+          return '''
         <tr>
           <td class="label">${e.key}</td>
           <td class="val">${e.value}</td>
         </tr>
       ''';
-    }).join('');
+        })
+        .join('');
 
     return '''
 <!DOCTYPE html>
@@ -507,8 +778,8 @@ class FinancialDocumentHelper {
     <div class="header">
       <div>
         <div class="society-title">${doc.societyName}</div>
-        <div class="society-sub">Treasury & Financial Management • ${doc.societyCity}</div>
-        <div class="society-sub">Registration No: SOC/GJ/AHM/2024/0981 • Contact: accounts@zenithsquare.com</div>
+        ${doc.societyLocation.isNotEmpty ? '<div class="society-sub">${doc.societyLocation}</div>' : ''}
+        ${doc.societyContact.isNotEmpty ? '<div class="society-sub">${doc.societyContact}</div>' : ''}
       </div>
       <div class="badge">${doc.status}</div>
     </div>
@@ -536,7 +807,7 @@ class FinancialDocumentHelper {
         </tr>
         <tr>
           <td class="label">Payer / Beneficiary Details</td>
-          <td class="val">${doc.payerOrPayee.isNotEmpty ? doc.payerOrPayee : 'Society Treasury Fund'}</td>
+          <td class="val">${doc.payerOrPayee}</td>
         </tr>
         <tr>
           <td class="label">Payment Mode</td>
@@ -563,7 +834,7 @@ class FinancialDocumentHelper {
     <div class="footer">
       <div style="font-size: 11px; color: #777;">
         <div>Electronic Computer Generated Record</div>
-        <div>Zenith Square Co-Op Housing Society Ltd.</div>
+        <div>${doc.societyName}</div>
       </div>
       <div style="text-align: center;">
         <div style="width: 180px; border-bottom: 1px solid #333; margin-bottom: 6px;"></div>
@@ -601,7 +872,10 @@ class _FinancialDocumentDialog extends StatelessWidget {
             children: [
               // 1. Header Banner with Integrated Close Button
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 color: themeColor,
                 child: Row(
                   children: [
@@ -635,12 +909,35 @@ class _FinancialDocumentDialog extends StatelessWidget {
                               letterSpacing: 0.5,
                             ),
                           ),
+                          if (doc.societyLocation.isNotEmpty)
+                            Text(
+                              doc.societyLocation,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 10,
+                              ),
+                            ),
+                          if (doc.societyContact.isNotEmpty)
+                            Text(
+                              doc.societyContact,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 10,
+                              ),
+                            ),
                         ],
                       ),
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
@@ -670,7 +967,10 @@ class _FinancialDocumentDialog extends StatelessWidget {
                   children: [
                     // 2. Document Number & Date ribbon
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(8),
@@ -685,14 +985,22 @@ class _FinancialDocumentDialog extends StatelessWidget {
                               children: [
                                 Text(
                                   'RECEIPT / VOUCHER NO',
-                                  style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   doc.docNumber,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'monospace',
+                                  ),
                                 ),
                               ],
                             ),
@@ -703,12 +1011,19 @@ class _FinancialDocumentDialog extends StatelessWidget {
                             children: [
                               Text(
                                 'TRANSACTION DATE',
-                                style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 doc.date,
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
@@ -720,25 +1035,35 @@ class _FinancialDocumentDialog extends StatelessWidget {
 
                     // 3. Key Details List
                     _infoTile('Category / Head', doc.categoryOrHead),
-                    _infoTile('Payer / Beneficiary', doc.payerOrPayee.isNotEmpty ? doc.payerOrPayee : 'Society Treasury'),
+                    _infoTile('Payer / Beneficiary', doc.payerOrPayee),
                     _infoTile('Payment Method', doc.paymentMethod),
-                    if (doc.description.isNotEmpty) _infoTile('Remarks / Details', doc.description),
-                    ...doc.extraDetails.entries.map((e) => _infoTile(e.key, e.value)),
+                    if (doc.description.isNotEmpty)
+                      _infoTile('Remarks / Details', doc.description),
+                    ...doc.extraDetails.entries.map(
+                      (e) => _infoTile(e.key, e.value),
+                    ),
 
                     const Divider(height: 22),
 
                     // 4. Amount Card
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                       decoration: BoxDecoration(
                         color: themeColor.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: themeColor.withValues(alpha: 0.3)),
+                        border: Border.all(
+                          color: themeColor.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: Column(
                         children: [
                           Text(
-                            isIncome ? 'TOTAL AMOUNT RECEIVED' : 'TOTAL AMOUNT DISBURSED',
+                            isIncome
+                                ? 'TOTAL AMOUNT RECEIVED'
+                                : 'TOTAL AMOUNT DISBURSED',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
@@ -762,7 +1087,11 @@ class _FinancialDocumentDialog extends StatelessWidget {
                           Text(
                             words,
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Colors.grey.shade700),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontStyle: FontStyle.italic,
+                              color: Colors.grey.shade700,
+                            ),
                           ),
                         ],
                       ),
@@ -780,17 +1109,29 @@ class _FinancialDocumentDialog extends StatelessWidget {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.verified, size: 16, color: Colors.green.shade700),
+                            Icon(
+                              Icons.verified,
+                              size: 16,
+                              color: Colors.green.shade700,
+                            ),
                             const SizedBox(width: 6),
                             const Text(
                               'Verified Electronic Record',
-                              style: TextStyle(fontSize: 11, color: Colors.black54, fontWeight: FontWeight.w500),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.black54,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ],
                         ),
                         Text(
-                          'Zenith Square Treasury Desk',
-                          style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                          doc.societyName,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade600,
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
                       ],
                     ),
@@ -808,10 +1149,19 @@ class _FinancialDocumentDialog extends StatelessWidget {
                               foregroundColor: Colors.white,
                               elevation: 1,
                             ),
-                            icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
-                            label: const Text('Download PDF', style: TextStyle(fontWeight: FontWeight.bold)),
+                            icon: const Icon(
+                              Icons.picture_as_pdf_outlined,
+                              size: 18,
+                            ),
+                            label: const Text(
+                              'Download PDF',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                             onPressed: () {
-                              FinancialDocumentHelper.downloadDocument(context, doc);
+                              FinancialDocumentHelper.downloadDocument(
+                                context,
+                                doc,
+                              );
                             },
                           ),
                         ),

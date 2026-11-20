@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../../data/datasource/finance_api_service.dart';
 import '../../../utils/file_download_helper.dart';
 
@@ -40,14 +41,25 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
 
     try {
       final society = (data['society'] as Map<String, dynamic>?) ?? {};
-      final treasury = (data['treasury_summary'] as Map<String, dynamic>?) ?? {};
+      final treasury =
+          (data['treasury_summary'] as Map<String, dynamic>?) ?? {};
       final monthly = (data['monthly_reports'] as List<dynamic>?) ?? [];
-      final breakdowns = (data['category_breakdowns'] as Map<String, dynamic>?) ?? {};
+      final breakdowns =
+          (data['category_breakdowns'] as Map<String, dynamic>?) ?? {};
 
-      final societyName = (society['name'] ?? 'Zenith Square Society').toString().toUpperCase();
+      final societyName = (society['name'] ?? 'Zenith Square Society')
+          .toString()
+          .toUpperCase();
       final societyCity = (society['city'] ?? 'Ahmedabad').toString();
 
-      final pdf = pw.Document();
+      final pdf = pw.Document(
+        theme: pw.ThemeData.withFont(
+          base: await PdfGoogleFonts.notoSansRegular(),
+          bold: await PdfGoogleFonts.notoSansBold(),
+          italic: await PdfGoogleFonts.notoSansItalic(),
+          boldItalic: await PdfGoogleFonts.notoSansBoldItalic(),
+        ),
+      );
 
       pdf.addPage(
         pw.MultiPage(
@@ -59,7 +71,9 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
               pw.Container(
                 padding: const pw.EdgeInsets.only(bottom: 12),
                 decoration: const pw.BoxDecoration(
-                  border: pw.Border(bottom: pw.BorderSide(color: PdfColors.indigo900, width: 2)),
+                  border: pw.Border(
+                    bottom: pw.BorderSide(color: PdfColors.indigo900, width: 2),
+                  ),
                 ),
                 child: pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -80,11 +94,18 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
                           pw.SizedBox(height: 3),
                           pw.Text(
                             'Financial Management & Treasury Audit Statement | $societyCity',
-                            style: const pw.TextStyle(fontSize: 9.5, color: PdfColors.grey700),
+                            style: const pw.TextStyle(
+                              fontSize: 9.5,
+                              color: PdfColors.grey700,
+                            ),
                           ),
                           pw.Text(
                             'Report Type: ${singleMonth != null ? '${singleMonth['month_label']} Monthly Statement' : 'Comprehensive Multi-Month Financial Audit'}',
-                            style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.indigo700),
+                            style: pw.TextStyle(
+                              fontSize: 9,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.indigo700,
+                            ),
                           ),
                         ],
                       ),
@@ -94,15 +115,25 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
                       children: [
                         pw.Text(
                           'TREASURY REPORT',
-                          style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.indigo900),
+                          style: pw.TextStyle(
+                            fontSize: 10,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.indigo900,
+                          ),
                         ),
                         pw.Text(
                           'Generated: ${DateTime.now().toString().split('.').first}',
-                          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+                          style: const pw.TextStyle(
+                            fontSize: 8,
+                            color: PdfColors.grey600,
+                          ),
                         ),
                         pw.Text(
-                          'Currency: INR (Rs.)',
-                          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+                          'Currency: INR (\u20B9)',
+                          style: const pw.TextStyle(
+                            fontSize: 8,
+                            color: PdfColors.grey600,
+                          ),
                         ),
                       ],
                     ),
@@ -116,7 +147,9 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
                 padding: const pw.EdgeInsets.all(12),
                 decoration: pw.BoxDecoration(
                   color: PdfColors.grey100,
-                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+                  borderRadius: const pw.BorderRadius.all(
+                    pw.Radius.circular(6),
+                  ),
                   border: pw.Border.all(color: PdfColors.grey300),
                 ),
                 child: pw.Column(
@@ -124,16 +157,36 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
                   children: [
                     pw.Text(
                       'OVERALL TREASURY SUMMARY',
-                      style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.indigo900),
+                      style: pw.TextStyle(
+                        fontSize: 10,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.indigo900,
+                      ),
                     ),
                     pw.SizedBox(height: 8),
                     pw.Row(
                       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                       children: [
-                        _pdfKpiItem('Net Treasury Balance', 'Rs. ${(treasury['net_balance'] ?? 0).toStringAsFixed(2)}', PdfColors.indigo900),
-                        _pdfKpiItem('Total Inflow Collected', 'Rs. ${(treasury['total_inflow'] ?? 0).toStringAsFixed(2)}', PdfColors.green800),
-                        _pdfKpiItem('Total Society Expenses', 'Rs. ${(treasury['total_expenses'] ?? 0).toStringAsFixed(2)}', PdfColors.red800),
-                        _pdfKpiItem('Pending Maintenance Dues', 'Rs. ${(treasury['total_pending_dues'] ?? 0).toStringAsFixed(2)}', PdfColors.orange900),
+                        _pdfKpiItem(
+                          'Net Treasury Balance',
+                          '\u20B9 ${(treasury['net_balance'] ?? 0).toStringAsFixed(2)}',
+                          PdfColors.indigo900,
+                        ),
+                        _pdfKpiItem(
+                          'Total Inflow Collected',
+                          '\u20B9 ${(treasury['total_inflow'] ?? 0).toStringAsFixed(2)}',
+                          PdfColors.green800,
+                        ),
+                        _pdfKpiItem(
+                          'Total Society Expenses',
+                          '\u20B9 ${(treasury['total_expenses'] ?? 0).toStringAsFixed(2)}',
+                          PdfColors.red800,
+                        ),
+                        _pdfKpiItem(
+                          'Pending Maintenance Dues',
+                          '\u20B9 ${(treasury['total_pending_dues'] ?? 0).toStringAsFixed(2)}',
+                          PdfColors.orange900,
+                        ),
                       ],
                     ),
                   ],
@@ -145,23 +198,51 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
               if (singleMonth != null) ...[
                 pw.Text(
                   'MONTHLY STATEMENT: ${(singleMonth['month_label'] ?? '').toString().toUpperCase()}',
-                  style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.indigo900),
+                  style: pw.TextStyle(
+                    fontSize: 11,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.indigo900,
+                  ),
                 ),
                 pw.SizedBox(height: 8),
 
                 pw.Table(
                   border: pw.TableBorder.all(color: PdfColors.grey300),
                   children: [
-                    _pdfTableRow('Metric', 'Amount / Performance', isHeader: true),
-                    _pdfTableRow('Maintenance Billed', 'Rs. ${(singleMonth['maintenance_billed'] ?? 0).toStringAsFixed(2)}'),
-                    _pdfTableRow('Maintenance Collected', 'Rs. ${(singleMonth['maintenance_collected'] ?? 0).toStringAsFixed(2)} (${singleMonth['collection_rate'] ?? 0}%)'),
-                    _pdfTableRow('Maintenance Pending', 'Rs. ${(singleMonth['maintenance_pending'] ?? 0).toStringAsFixed(2)}'),
-                    _pdfTableRow('Other Society Incomes', 'Rs. ${(singleMonth['society_income'] ?? 0).toStringAsFixed(2)}'),
-                    _pdfTableRow('Total Gross Inflow', 'Rs. ${(singleMonth['total_income'] ?? 0).toStringAsFixed(2)}', isBold: true),
-                    _pdfTableRow('Total Society Expenses', 'Rs. ${(singleMonth['total_expenses'] ?? 0).toStringAsFixed(2)}', isBold: true),
+                    _pdfTableRow(
+                      'Metric',
+                      'Amount / Performance',
+                      isHeader: true,
+                    ),
+                    _pdfTableRow(
+                      'Maintenance Billed',
+                      '\u20B9 ${(singleMonth['maintenance_billed'] ?? 0).toStringAsFixed(2)}',
+                    ),
+                    _pdfTableRow(
+                      'Maintenance Collected',
+                      '\u20B9 ${(singleMonth['maintenance_collected'] ?? 0).toStringAsFixed(2)} (${singleMonth['collection_rate'] ?? 0}%)',
+                    ),
+                    _pdfTableRow(
+                      'Maintenance Pending',
+                      '\u20B9 ${(singleMonth['maintenance_pending'] ?? 0).toStringAsFixed(2)}',
+                    ),
+                    _pdfTableRow(
+                      'Other Society Incomes',
+                      '\u20B9 ${(singleMonth['society_income'] ?? 0).toStringAsFixed(2)}',
+                    ),
+                    _pdfTableRow(
+                      'Total Gross Inflow',
+                      '\u20B9 ${(singleMonth['total_income'] ?? 0).toStringAsFixed(2)}',
+                      isBold: true,
+                    ),
+                    _pdfTableRow(
+                      'Total Society Expenses',
+                      '\u20B9 ${(singleMonth['total_expenses'] ?? 0).toStringAsFixed(2)}',
+                      isBold: true,
+                    ),
                     _pdfTableRow(
                       'Net Operating Surplus / (Deficit)',
-                      'Rs. ${(singleMonth['net_surplus'] ?? 0).toStringAsFixed(2)}',
+                      '\u20B9 ${(singleMonth['net_surplus'] ?? 0).toStringAsFixed(2)}',
                       isBold: true,
                     ),
                   ],
@@ -169,46 +250,88 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
                 pw.SizedBox(height: 16),
 
                 // Month Expense Breakdown
-                if (((singleMonth['expense_breakdown'] as List<dynamic>?) ?? []).isNotEmpty) ...[
-                  pw.Text('Itemized Month Expenses:', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                if (((singleMonth['expense_breakdown'] as List<dynamic>?) ?? [])
+                    .isNotEmpty) ...[
+                  pw.Text(
+                    'Itemized Month Expenses:',
+                    style: pw.TextStyle(
+                      fontSize: 10,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
                   pw.SizedBox(height: 6),
                   pw.Table(
                     border: pw.TableBorder.all(color: PdfColors.grey300),
                     children: [
-                      _pdfTableRow('Expense Category', 'Disbursed Amount', isHeader: true),
-                      ...((singleMonth['expense_breakdown'] as List<dynamic>?) ?? []).map(
-                        (e) => _pdfTableRow(e['category'].toString(), 'Rs. ${(e['amount'] ?? 0).toStringAsFixed(2)}'),
+                      _pdfTableRow(
+                        'Expense Category',
+                        'Disbursed Amount',
+                        isHeader: true,
                       ),
+                      ...((singleMonth['expense_breakdown']
+                                  as List<dynamic>?) ??
+                              [])
+                          .map(
+                            (e) => _pdfTableRow(
+                              e['category'].toString(),
+                              '\u20B9 ${(e['amount'] ?? 0).toStringAsFixed(2)}',
+                            ),
+                          ),
                     ],
                   ),
                   pw.SizedBox(height: 16),
                 ],
 
                 // Month Income Breakdown
-                if (((singleMonth['income_breakdown'] as List<dynamic>?) ?? []).isNotEmpty) ...[
-                  pw.Text('Itemized Month Incomes:', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                if (((singleMonth['income_breakdown'] as List<dynamic>?) ?? [])
+                    .isNotEmpty) ...[
+                  pw.Text(
+                    'Itemized Month Incomes:',
+                    style: pw.TextStyle(
+                      fontSize: 10,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
                   pw.SizedBox(height: 6),
                   pw.Table(
                     border: pw.TableBorder.all(color: PdfColors.grey300),
                     children: [
-                      _pdfTableRow('Income Category', 'Received Amount', isHeader: true),
-                      ...((singleMonth['income_breakdown'] as List<dynamic>?) ?? []).map(
-                        (inc) => _pdfTableRow(inc['category'].toString(), 'Rs. ${(inc['amount'] ?? 0).toStringAsFixed(2)}'),
+                      _pdfTableRow(
+                        'Income Category',
+                        'Received Amount',
+                        isHeader: true,
                       ),
+                      ...((singleMonth['income_breakdown'] as List<dynamic>?) ??
+                              [])
+                          .map(
+                            (inc) => _pdfTableRow(
+                              inc['category'].toString(),
+                              '\u20B9 ${(inc['amount'] ?? 0).toStringAsFixed(2)}',
+                            ),
+                          ),
                     ],
                   ),
                   pw.SizedBox(height: 16),
                 ],
               ] else ...[
                 // Comprehensive Multi-Month Financial Ledger Table
-                pw.Text('COMPARATIVE MONTHLY FINANCIAL LEDGER', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.indigo900)),
+                pw.Text(
+                  'COMPARATIVE MONTHLY FINANCIAL LEDGER',
+                  style: pw.TextStyle(
+                    fontSize: 11,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.indigo900,
+                  ),
+                ),
                 pw.SizedBox(height: 8),
 
                 pw.Table(
                   border: pw.TableBorder.all(color: PdfColors.grey400),
                   children: [
                     pw.TableRow(
-                      decoration: const pw.BoxDecoration(color: PdfColors.indigo900),
+                      decoration: const pw.BoxDecoration(
+                        color: PdfColors.indigo900,
+                      ),
                       children: [
                         _pdfHeaderCell('Month'),
                         _pdfHeaderCell('Billed'),
@@ -225,16 +348,28 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
                       return pw.TableRow(
                         children: [
                           _pdfDataCell(m['month_abbr'] ?? '', isBold: true),
-                          _pdfDataCell('Rs.${(m['maintenance_billed'] ?? 0).toInt()}'),
-                          _pdfDataCell('Rs.${(m['maintenance_collected'] ?? 0).toInt()}'),
-                          _pdfDataCell('${m['collection_rate']}%'),
-                          _pdfDataCell('Rs.${(m['society_income'] ?? 0).toInt()}'),
-                          _pdfDataCell('Rs.${(m['total_income'] ?? 0).toInt()}'),
-                          _pdfDataCell('Rs.${(m['total_expenses'] ?? 0).toInt()}'),
                           _pdfDataCell(
-                            'Rs.${net.toStringAsFixed(0)}',
+                            '\u20B9 ${(m['maintenance_billed'] ?? 0).toInt()}',
+                          ),
+                          _pdfDataCell(
+                            '\u20B9 ${(m['maintenance_collected'] ?? 0).toInt()}',
+                          ),
+                          _pdfDataCell('${m['collection_rate']}%'),
+                          _pdfDataCell(
+                            '\u20B9 ${(m['society_income'] ?? 0).toInt()}',
+                          ),
+                          _pdfDataCell(
+                            '\u20B9 ${(m['total_income'] ?? 0).toInt()}',
+                          ),
+                          _pdfDataCell(
+                            '\u20B9 ${(m['total_expenses'] ?? 0).toInt()}',
+                          ),
+                          _pdfDataCell(
+                            '\u20B9 ${net.toStringAsFixed(0)}',
                             isBold: true,
-                            textColor: net >= 0 ? PdfColors.green900 : PdfColors.red900,
+                            textColor: net >= 0
+                                ? PdfColors.green900
+                                : PdfColors.red900,
                           ),
                         ],
                       );
@@ -252,13 +387,33 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
                       child: pw.Column(
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
-                          pw.Text('EXPENSE DISTRIBUTION', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.red800)),
+                          pw.Text(
+                            'EXPENSE DISTRIBUTION',
+                            style: pw.TextStyle(
+                              fontSize: 10,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.red800,
+                            ),
+                          ),
                           pw.SizedBox(height: 6),
                           pw.Table(
-                            border: pw.TableBorder.all(color: PdfColors.grey300),
+                            border: pw.TableBorder.all(
+                              color: PdfColors.grey300,
+                            ),
                             children: [
-                              _pdfTableRow('Category', 'Amount', isHeader: true),
-                              ...((breakdowns['expenses'] as List<dynamic>?) ?? []).map((e) => _pdfTableRow(e['category'].toString(), 'Rs.${(e['amount'] ?? 0).toInt()}')),
+                              _pdfTableRow(
+                                'Category',
+                                'Amount',
+                                isHeader: true,
+                              ),
+                              ...((breakdowns['expenses'] as List<dynamic>?) ??
+                                      [])
+                                  .map(
+                                    (e) => _pdfTableRow(
+                                      e['category'].toString(),
+                                      '\u20B9 ${(e['amount'] ?? 0).toInt()}',
+                                    ),
+                                  ),
                             ],
                           ),
                         ],
@@ -270,13 +425,33 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
                       child: pw.Column(
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
-                          pw.Text('INCOME DISTRIBUTION', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.green800)),
+                          pw.Text(
+                            'INCOME DISTRIBUTION',
+                            style: pw.TextStyle(
+                              fontSize: 10,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.green800,
+                            ),
+                          ),
                           pw.SizedBox(height: 6),
                           pw.Table(
-                            border: pw.TableBorder.all(color: PdfColors.grey300),
+                            border: pw.TableBorder.all(
+                              color: PdfColors.grey300,
+                            ),
                             children: [
-                              _pdfTableRow('Category', 'Amount', isHeader: true),
-                              ...((breakdowns['incomes'] as List<dynamic>?) ?? []).map((inc) => _pdfTableRow(inc['category'].toString(), 'Rs.${(inc['amount'] ?? 0).toInt()}')),
+                              _pdfTableRow(
+                                'Category',
+                                'Amount',
+                                isHeader: true,
+                              ),
+                              ...((breakdowns['incomes'] as List<dynamic>?) ??
+                                      [])
+                                  .map(
+                                    (inc) => _pdfTableRow(
+                                      inc['category'].toString(),
+                                      '\u20B9 ${(inc['amount'] ?? 0).toInt()}',
+                                    ),
+                                  ),
                             ],
                           ),
                         ],
@@ -292,7 +467,9 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
               pw.Container(
                 padding: const pw.EdgeInsets.only(top: 14),
                 decoration: const pw.BoxDecoration(
-                  border: pw.Border(top: pw.BorderSide(color: PdfColors.grey300)),
+                  border: pw.Border(
+                    top: pw.BorderSide(color: PdfColors.grey300),
+                  ),
                 ),
                 child: pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -300,19 +477,51 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
                     pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
-                        pw.Container(width: 140, height: 1, color: PdfColors.grey700),
+                        pw.Container(
+                          width: 140,
+                          height: 1,
+                          color: PdfColors.grey700,
+                        ),
                         pw.SizedBox(height: 4),
-                        pw.Text('Prepared & Verified by:', style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700)),
-                        pw.Text('TREASURER', style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold)),
+                        pw.Text(
+                          'Prepared & Verified by:',
+                          style: const pw.TextStyle(
+                            fontSize: 8.5,
+                            color: PdfColors.grey700,
+                          ),
+                        ),
+                        pw.Text(
+                          'TREASURER',
+                          style: pw.TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
                       ],
                     ),
                     pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.end,
                       children: [
-                        pw.Container(width: 140, height: 1, color: PdfColors.grey700),
+                        pw.Container(
+                          width: 140,
+                          height: 1,
+                          color: PdfColors.grey700,
+                        ),
                         pw.SizedBox(height: 4),
-                        pw.Text('Audited & Confirmed by:', style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700)),
-                        pw.Text('CHAIRMAN / SECRETARY', style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold)),
+                        pw.Text(
+                          'Audited & Confirmed by:',
+                          style: const pw.TextStyle(
+                            fontSize: 8.5,
+                            color: PdfColors.grey700,
+                          ),
+                        ),
+                        pw.Text(
+                          'CHAIRMAN / SECRETARY',
+                          style: pw.TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -324,8 +533,11 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
       );
 
       final pdfBytes = await pdf.save();
-      final suffix = singleMonth != null ? singleMonth['month_code'] : 'FULL_AUDIT';
-      final fileName = 'FINANCIAL_REPORT_${societyName.replaceAll(' ', '_')}_$suffix.pdf';
+      final suffix = singleMonth != null
+          ? singleMonth['month_code']
+          : 'FULL_AUDIT';
+      final fileName =
+          'FINANCIAL_REPORT_${societyName.replaceAll(' ', '_')}_$suffix.pdf';
 
       downloadWebBinaryFile(
         fileName: fileName,
@@ -372,16 +584,33 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pw.Text(label, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+        pw.Text(
+          label,
+          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+        ),
         pw.SizedBox(height: 2),
-        pw.Text(value, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: color)),
+        pw.Text(
+          value,
+          style: pw.TextStyle(
+            fontSize: 11,
+            fontWeight: pw.FontWeight.bold,
+            color: color,
+          ),
+        ),
       ],
     );
   }
 
-  pw.TableRow _pdfTableRow(String col1, String col2, {bool isHeader = false, bool isBold = false}) {
+  pw.TableRow _pdfTableRow(
+    String col1,
+    String col2, {
+    bool isHeader = false,
+    bool isBold = false,
+  }) {
     return pw.TableRow(
-      decoration: isHeader ? const pw.BoxDecoration(color: PdfColors.grey200) : null,
+      decoration: isHeader
+          ? const pw.BoxDecoration(color: PdfColors.grey200)
+          : null,
       children: [
         pw.Padding(
           padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
@@ -389,7 +618,9 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
             col1,
             style: pw.TextStyle(
               fontSize: 9,
-              fontWeight: (isHeader || isBold) ? pw.FontWeight.bold : pw.FontWeight.normal,
+              fontWeight: (isHeader || isBold)
+                  ? pw.FontWeight.bold
+                  : pw.FontWeight.normal,
               color: isHeader ? PdfColors.black : PdfColors.grey800,
             ),
           ),
@@ -400,7 +631,9 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
             col2,
             style: pw.TextStyle(
               fontSize: 9,
-              fontWeight: (isHeader || isBold) ? pw.FontWeight.bold : pw.FontWeight.normal,
+              fontWeight: (isHeader || isBold)
+                  ? pw.FontWeight.bold
+                  : pw.FontWeight.normal,
               color: isHeader ? PdfColors.black : PdfColors.grey900,
             ),
           ),
@@ -414,13 +647,21 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
       padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 5),
       child: pw.Text(
         text,
-        style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+        style: pw.TextStyle(
+          fontSize: 8,
+          fontWeight: pw.FontWeight.bold,
+          color: PdfColors.white,
+        ),
         textAlign: pw.TextAlign.center,
       ),
     );
   }
 
-  pw.Widget _pdfDataCell(String text, {PdfColor? textColor, bool isBold = false}) {
+  pw.Widget _pdfDataCell(
+    String text, {
+    PdfColor? textColor,
+    bool isBold = false,
+  }) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 5),
       child: pw.Text(
@@ -451,10 +692,7 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadReport,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadReport),
         ],
       ),
       body: FutureBuilder<Map<String, dynamic>>(
@@ -485,19 +723,26 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
           }
 
           final data = snapshot.data ?? {};
-          final treasury = (data['treasury_summary'] as Map<String, dynamic>?) ?? {};
+          final treasury =
+              (data['treasury_summary'] as Map<String, dynamic>?) ?? {};
           final rawReports = (data['monthly_reports'] as List<dynamic>?) ?? [];
-          final breakdowns = (data['category_breakdowns'] as Map<String, dynamic>?) ?? {};
+          final breakdowns =
+              (data['category_breakdowns'] as Map<String, dynamic>?) ?? {};
 
           if (rawReports.isEmpty) {
-            return const Center(child: Text('No financial report data available.'));
+            return const Center(
+              child: Text('No financial report data available.'),
+            );
           }
 
           // Order months with newest/current first so it is immediately visible
           final monthlyReports = rawReports.reversed.toList();
 
-          final safeSelectedIdx = _selectedMonthIndex < monthlyReports.length ? _selectedMonthIndex : 0;
-          final selectedMonthData = monthlyReports[safeSelectedIdx] as Map<String, dynamic>;
+          final safeSelectedIdx = _selectedMonthIndex < monthlyReports.length
+              ? _selectedMonthIndex
+              : 0;
+          final selectedMonthData =
+              monthlyReports[safeSelectedIdx] as Map<String, dynamic>;
 
           return RefreshIndicator(
             onRefresh: () async => _loadReport(),
@@ -600,7 +845,11 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
                     color: Colors.indigo.shade50,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.account_balance, color: Colors.indigo.shade800, size: 20),
+                  child: Icon(
+                    Icons.account_balance,
+                    color: Colors.indigo.shade800,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -612,13 +861,19 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
                         'Financial Statements',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
                       ),
                       Text(
                         'Official Audit & Past Ledgers',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                     ],
                   ),
@@ -633,13 +888,27 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
               foregroundColor: Colors.white,
               visualDensity: VisualDensity.compact,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
-            onPressed: _isDownloadingPdf ? null : () => _downloadReportPdf(data: data),
+            onPressed: _isDownloadingPdf
+                ? null
+                : () => _downloadReportPdf(data: data),
             icon: _isDownloadingPdf
-                ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                ? const SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
                 : const Icon(Icons.picture_as_pdf, size: 14),
-            label: const Text('Download PDF', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+            label: const Text(
+              'Download PDF',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -681,7 +950,11 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
                   'Cumulative Net Treasury Balance',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -693,7 +966,11 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
                 ),
                 child: Text(
                   'Units: $assignedUnits / $totalUnits',
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -720,15 +997,27 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
           Row(
             children: [
               Expanded(
-                child: _heroMetricItem('Total Inflow', '₹${totalInflow.toStringAsFixed(0)}', Colors.greenAccent),
+                child: _heroMetricItem(
+                  'Total Inflow',
+                  '₹${totalInflow.toStringAsFixed(0)}',
+                  Colors.greenAccent,
+                ),
               ),
               const SizedBox(width: 6),
               Expanded(
-                child: _heroMetricItem('Total Expenses', '₹${totalExpenses.toStringAsFixed(0)}', Colors.redAccent.shade100),
+                child: _heroMetricItem(
+                  'Total Expenses',
+                  '₹${totalExpenses.toStringAsFixed(0)}',
+                  Colors.redAccent.shade100,
+                ),
               ),
               const SizedBox(width: 6),
               Expanded(
-                child: _heroMetricItem('Pending Dues', '₹${totalPending.toStringAsFixed(0)}', Colors.orangeAccent),
+                child: _heroMetricItem(
+                  'Pending Dues',
+                  '₹${totalPending.toStringAsFixed(0)}',
+                  Colors.orangeAccent,
+                ),
               ),
             ],
           ),
@@ -753,7 +1042,11 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
           alignment: Alignment.centerLeft,
           child: Text(
             value,
-            style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: color,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ],
@@ -763,7 +1056,10 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
   // ---------------------------------------------------------------------------
   // PAST & CURRENT MONTH SELECTOR
   // ---------------------------------------------------------------------------
-  Widget _buildMonthSelectorChips(List<dynamic> monthlyReports, int selectedIdx) {
+  Widget _buildMonthSelectorChips(
+    List<dynamic> monthlyReports,
+    int selectedIdx,
+  ) {
     return SizedBox(
       height: 44,
       child: ListView.separated(
@@ -774,7 +1070,9 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
           final m = monthlyReports[index] as Map<String, dynamic>;
           final isSelected = index == selectedIdx;
           final isCurrent = m['is_current'] == true;
-          final label = isCurrent ? '${m['month_label']} (Current)' : m['month_label'];
+          final label = isCurrent
+              ? '${m['month_label']} (Current)'
+              : m['month_label'];
 
           return ChoiceChip(
             selected: isSelected,
@@ -782,7 +1080,13 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
               if (val) setState(() => _selectedMonthIndex = index);
             },
             showCheckmark: false,
-            avatar: isCurrent ? Icon(Icons.star, size: 14, color: isSelected ? Colors.amber : Colors.amber.shade800) : null,
+            avatar: isCurrent
+                ? Icon(
+                    Icons.star,
+                    size: 14,
+                    color: isSelected ? Colors.amber : Colors.amber.shade800,
+                  )
+                : null,
             label: Text(label),
             labelStyle: TextStyle(
               fontSize: 12,
@@ -791,15 +1095,22 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
             ),
             selectedColor: Colors.indigo.shade800,
             backgroundColor: Colors.white,
-            side: BorderSide(color: isSelected ? Colors.indigo.shade800 : Colors.grey.shade300),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            side: BorderSide(
+              color: isSelected ? Colors.indigo.shade800 : Colors.grey.shade300,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           );
         },
       ),
     );
   }
 
-  Widget _buildSelectedMonthCard(Map<String, dynamic> fullData, Map<String, dynamic> month) {
+  Widget _buildSelectedMonthCard(
+    Map<String, dynamic> fullData,
+    Map<String, dynamic> month,
+  ) {
     final monthLabel = month['month_label'] ?? 'Monthly Report';
     final billed = (month['maintenance_billed'] ?? 0.0).toDouble();
     final collected = (month['maintenance_collected'] ?? 0.0).toDouble();
@@ -810,7 +1121,8 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
     final totalExp = (month['total_expenses'] ?? 0.0).toDouble();
     final netSurplus = (month['net_surplus'] ?? 0.0).toDouble();
 
-    final expenseBreakdown = (month['expense_breakdown'] as List<dynamic>?) ?? [];
+    final expenseBreakdown =
+        (month['expense_breakdown'] as List<dynamic>?) ?? [];
     final incomeBreakdown = (month['income_breakdown'] as List<dynamic>?) ?? [];
 
     final isPositive = netSurplus >= 0;
@@ -839,14 +1151,20 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
                         monthLabel,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'Monthly Financial Audit & Breakdown',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                     ],
                   ),
@@ -857,12 +1175,25 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
                     backgroundColor: Colors.teal.shade700,
                     foregroundColor: Colors.white,
                     visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                   ),
-                  onPressed: _isDownloadingPdf ? null : () => _downloadReportPdf(data: fullData, singleMonth: month),
+                  onPressed: _isDownloadingPdf
+                      ? null
+                      : () => _downloadReportPdf(
+                          data: fullData,
+                          singleMonth: month,
+                        ),
                   icon: const Icon(Icons.picture_as_pdf_outlined, size: 14),
-                  label: const Text('Month PDF', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  label: const Text(
+                    'Month PDF',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             ),
@@ -872,15 +1203,30 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
             Row(
               children: [
                 Expanded(
-                  child: _monthKpiCard('Maintenance Billed', '₹${billed.toStringAsFixed(0)}', Colors.indigo.shade800, Colors.indigo.shade50),
+                  child: _monthKpiCard(
+                    'Maintenance Billed',
+                    '₹${billed.toStringAsFixed(0)}',
+                    Colors.indigo.shade800,
+                    Colors.indigo.shade50,
+                  ),
                 ),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: _monthKpiCard('Collected ($rate%)', '₹${collected.toStringAsFixed(0)}', Colors.green.shade800, Colors.green.shade50),
+                  child: _monthKpiCard(
+                    'Collected ($rate%)',
+                    '₹${collected.toStringAsFixed(0)}',
+                    Colors.green.shade800,
+                    Colors.green.shade50,
+                  ),
                 ),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: _monthKpiCard('Pending Dues', '₹${pending.toStringAsFixed(0)}', Colors.orange.shade900, Colors.orange.shade50),
+                  child: _monthKpiCard(
+                    'Pending Dues',
+                    '₹${pending.toStringAsFixed(0)}',
+                    Colors.orange.shade900,
+                    Colors.orange.shade50,
+                  ),
                 ),
               ],
             ),
@@ -888,15 +1234,30 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
             Row(
               children: [
                 Expanded(
-                  child: _monthKpiCard('Other Society Incomes', '₹${otherInc.toStringAsFixed(0)}', Colors.teal.shade800, Colors.teal.shade50),
+                  child: _monthKpiCard(
+                    'Other Society Incomes',
+                    '₹${otherInc.toStringAsFixed(0)}',
+                    Colors.teal.shade800,
+                    Colors.teal.shade50,
+                  ),
                 ),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: _monthKpiCard('Total Inflow', '₹${totalInflow.toStringAsFixed(0)}', Colors.blue.shade900, Colors.blue.shade50),
+                  child: _monthKpiCard(
+                    'Total Inflow',
+                    '₹${totalInflow.toStringAsFixed(0)}',
+                    Colors.blue.shade900,
+                    Colors.blue.shade50,
+                  ),
                 ),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: _monthKpiCard('Total Expenses', '₹${totalExp.toStringAsFixed(0)}', Colors.red.shade800, Colors.red.shade50),
+                  child: _monthKpiCard(
+                    'Total Expenses',
+                    '₹${totalExp.toStringAsFixed(0)}',
+                    Colors.red.shade800,
+                    Colors.red.shade50,
+                  ),
                 ),
               ],
             ),
@@ -908,25 +1269,35 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
               decoration: BoxDecoration(
                 color: isPositive ? Colors.green.shade50 : Colors.red.shade50,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: isPositive ? Colors.green.shade200 : Colors.red.shade200),
+                border: Border.all(
+                  color: isPositive
+                      ? Colors.green.shade200
+                      : Colors.red.shade200,
+                ),
               ),
               child: Row(
                 children: [
                   Icon(
                     isPositive ? Icons.trending_up : Icons.trending_down,
-                    color: isPositive ? Colors.green.shade800 : Colors.red.shade800,
+                    color: isPositive
+                        ? Colors.green.shade800
+                        : Colors.red.shade800,
                     size: 18,
                   ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      isPositive ? 'Net Monthly Surplus:' : 'Net Monthly Deficit:',
+                      isPositive
+                          ? 'Net Monthly Surplus:'
+                          : 'Net Monthly Deficit:',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
-                        color: isPositive ? Colors.green.shade900 : Colors.red.shade900,
+                        color: isPositive
+                            ? Colors.green.shade900
+                            : Colors.red.shade900,
                       ),
                     ),
                   ),
@@ -938,7 +1309,9 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
-                        color: isPositive ? Colors.green.shade900 : Colors.red.shade900,
+                        color: isPositive
+                            ? Colors.green.shade900
+                            : Colors.red.shade900,
                       ),
                     ),
                   ),
@@ -949,48 +1322,83 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
             // Itemized Monthly Incomes & Expenses
             if (incomeBreakdown.isNotEmpty || expenseBreakdown.isNotEmpty) ...[
               const SizedBox(height: 16),
-              const Text('Itemized Month Transactions:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              const Text(
+                'Itemized Month Transactions:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
               const SizedBox(height: 8),
               if (incomeBreakdown.isNotEmpty) ...[
-                Text('Incomes Received:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.green.shade800)),
-                const SizedBox(height: 4),
-                ...incomeBreakdown.map((inc) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '• ${inc['category']}',
-                          style: const TextStyle(fontSize: 12),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text('+ ₹${inc['amount']}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green.shade800)),
-                    ],
+                Text(
+                  'Incomes Received:',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.green.shade800,
                   ),
-                )),
+                ),
+                const SizedBox(height: 4),
+                ...incomeBreakdown.map(
+                  (inc) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2.0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '• ${inc['category']}',
+                            style: const TextStyle(fontSize: 12),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '+ ₹${inc['amount']}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 8),
               ],
               if (expenseBreakdown.isNotEmpty) ...[
-                Text('Expenses Disbursed:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.red.shade800)),
-                const SizedBox(height: 4),
-                ...expenseBreakdown.map((e) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '• ${e['category']}',
-                          style: const TextStyle(fontSize: 12),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text('- ₹${e['amount']}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red.shade800)),
-                    ],
+                Text(
+                  'Expenses Disbursed:',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.red.shade800,
                   ),
-                )),
+                ),
+                const SizedBox(height: 4),
+                ...expenseBreakdown.map(
+                  (e) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2.0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '• ${e['category']}',
+                            style: const TextStyle(fontSize: 12),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '- ₹${e['amount']}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red.shade800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ],
           ],
@@ -999,7 +1407,12 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
     );
   }
 
-  Widget _monthKpiCard(String label, String value, Color textColor, Color bgColor) {
+  Widget _monthKpiCard(
+    String label,
+    String value,
+    Color textColor,
+    Color bgColor,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
@@ -1013,7 +1426,11 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
             label,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 10, color: textColor.withValues(alpha: 0.8), fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontSize: 10,
+              color: textColor.withValues(alpha: 0.8),
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 2),
           FittedBox(
@@ -1021,7 +1438,11 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
             alignment: Alignment.centerLeft,
             child: Text(
               value,
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: textColor),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
             ),
           ),
         ],
@@ -1032,7 +1453,10 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
   // ---------------------------------------------------------------------------
   // COMPARATIVE MULTI-MONTH LEDGER TABLE
   // ---------------------------------------------------------------------------
-  Widget _buildComparativeLedgerTable(Map<String, dynamic> fullData, List<dynamic> monthlyReports) {
+  Widget _buildComparativeLedgerTable(
+    Map<String, dynamic> fullData,
+    List<dynamic> monthlyReports,
+  ) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Container(
@@ -1045,7 +1469,11 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
           columnSpacing: 14,
           horizontalMargin: 12,
           headingRowColor: WidgetStateProperty.all(Colors.blueGrey.shade900),
-          headingTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+          headingTextStyle: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 11,
+          ),
           dataRowMinHeight: 36,
           dataRowMaxHeight: 44,
           columns: const [
@@ -1065,22 +1493,79 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
 
             return DataRow(
               cells: [
-                DataCell(Text(m['month_abbr'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                DataCell(Text('₹${(m['maintenance_billed'] ?? 0).toInt()}', style: const TextStyle(fontSize: 12))),
-                DataCell(Text('₹${(m['maintenance_collected'] ?? 0).toInt()}', style: const TextStyle(fontSize: 12, color: Colors.green))),
-                DataCell(Text('${m['collection_rate']}%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
-                DataCell(Text('₹${(m['society_income'] ?? 0).toInt()}', style: const TextStyle(fontSize: 12))),
-                DataCell(Text('₹${(m['total_income'] ?? 0).toInt()}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
-                DataCell(Text('₹${(m['total_expenses'] ?? 0).toInt()}', style: const TextStyle(fontSize: 12, color: Colors.red))),
-                DataCell(Text(
-                  '₹${net.toStringAsFixed(0)}',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isPos ? Colors.green.shade800 : Colors.red.shade800),
-                )),
+                DataCell(
+                  Text(
+                    m['month_abbr'] ?? '',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                DataCell(
+                  Text(
+                    '₹${(m['maintenance_billed'] ?? 0).toInt()}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+                DataCell(
+                  Text(
+                    '₹${(m['maintenance_collected'] ?? 0).toInt()}',
+                    style: const TextStyle(fontSize: 12, color: Colors.green),
+                  ),
+                ),
+                DataCell(
+                  Text(
+                    '${m['collection_rate']}%',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                DataCell(
+                  Text(
+                    '₹${(m['society_income'] ?? 0).toInt()}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+                DataCell(
+                  Text(
+                    '₹${(m['total_income'] ?? 0).toInt()}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                DataCell(
+                  Text(
+                    '₹${(m['total_expenses'] ?? 0).toInt()}',
+                    style: const TextStyle(fontSize: 12, color: Colors.red),
+                  ),
+                ),
+                DataCell(
+                  Text(
+                    '₹${net.toStringAsFixed(0)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: isPos
+                          ? Colors.green.shade800
+                          : Colors.red.shade800,
+                    ),
+                  ),
+                ),
                 DataCell(
                   IconButton(
-                    icon: const Icon(Icons.picture_as_pdf_outlined, size: 16, color: Colors.indigo),
+                    icon: const Icon(
+                      Icons.picture_as_pdf_outlined,
+                      size: 16,
+                      color: Colors.indigo,
+                    ),
                     tooltip: 'Download ${m['month_label']} PDF',
-                    onPressed: () => _downloadReportPdf(data: fullData, singleMonth: m),
+                    onPressed: () =>
+                        _downloadReportPdf(data: fullData, singleMonth: m),
                   ),
                 ),
               ],
@@ -1117,25 +1602,56 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.savings_outlined, color: Colors.green.shade700, size: 16),
+                      Icon(
+                        Icons.savings_outlined,
+                        color: Colors.green.shade700,
+                        size: 16,
+                      ),
                       const SizedBox(width: 6),
-                      const Text('Income Sources', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      const Text(
+                        'Income Sources',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
                     ],
                   ),
                   const Divider(height: 16),
                   if (incomes.isEmpty)
-                    Text('No other income records', style: TextStyle(fontSize: 11, color: Colors.grey.shade500))
-                  else
-                    ...incomes.map((inc) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 3),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(child: Text(inc['category'] ?? 'Misc', style: const TextStyle(fontSize: 11), overflow: TextOverflow.ellipsis)),
-                          Text('₹${inc['amount']}', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green.shade800)),
-                        ],
+                    Text(
+                      'No other income records',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade500,
                       ),
-                    )),
+                    )
+                  else
+                    ...incomes.map(
+                      (inc) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 3),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                inc['category'] ?? 'Misc',
+                                style: const TextStyle(fontSize: 11),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Text(
+                              '₹${inc['amount']}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green.shade800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -1159,25 +1675,56 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.money_off_outlined, color: Colors.red.shade700, size: 16),
+                      Icon(
+                        Icons.money_off_outlined,
+                        color: Colors.red.shade700,
+                        size: 16,
+                      ),
                       const SizedBox(width: 6),
-                      const Text('Expense Heads', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      const Text(
+                        'Expense Heads',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
                     ],
                   ),
                   const Divider(height: 16),
                   if (expenses.isEmpty)
-                    Text('No expense records', style: TextStyle(fontSize: 11, color: Colors.grey.shade500))
-                  else
-                    ...expenses.map((e) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 3),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(child: Text(e['category'] ?? 'General', style: const TextStyle(fontSize: 11), overflow: TextOverflow.ellipsis)),
-                          Text('₹${e['amount']}', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.red.shade800)),
-                        ],
+                    Text(
+                      'No expense records',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade500,
                       ),
-                    )),
+                    )
+                  else
+                    ...expenses.map(
+                      (e) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 3),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                e['category'] ?? 'General',
+                                style: const TextStyle(fontSize: 11),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Text(
+                              '₹${e['amount']}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red.shade800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

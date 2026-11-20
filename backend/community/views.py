@@ -9,6 +9,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
 from core_api.models import Users, Roles, Resident, Flats, Occupancy, Blocks
+from finance.models import MaintenanceBill
 from .models import Meeting, SocietyCommittee, CommitteeChange, Polls, PollsOption, PollsResponse, LostFoundItem, Tenant, SocietyDocument,DocumentAuditLog
 from .serializers import (
     MeetingSerializer,
@@ -415,9 +416,18 @@ class LostFoundItemClaimView(APIView):
         if not item:
             return Response({'success': False, 'error': 'Item not found in this society.'}, status=status.HTTP_404_NOT_FOUND)
 
-        new_status = request.data.get('status', 'Claimed')
-        if new_status not in ['Claimed', 'Resolved', 'Returned', 'Lost', 'Found']:
-            return Response({'success': False, 'error': 'Invalid resolution status provided.'}, status=status.HTTP_400_BAD_REQUEST)
+        raw_status = request.data.get('status', 'Claimed')
+        if isinstance(raw_status, str):
+            raw_status = raw_status.strip().title()
+
+        # Simplify/normalize synonymous statuses to canonical 'Claimed'
+        if raw_status in ['Resolved', 'Returned']:
+            new_status = 'Claimed'
+        else:
+            new_status = raw_status
+
+        if new_status not in ['Lost', 'Found', 'Claimed']:
+            return Response({'success': False, 'error': "Invalid status. Allowed statuses are: 'Lost', 'Found', 'Claimed'."}, status=status.HTTP_400_BAD_REQUEST)
 
         item.item_status = new_status
         item.handled_by = request.user
@@ -605,6 +615,11 @@ class TenantListCreateView(APIView):
             is_primary=True
         )
 
+        # Synchronize any existing pending maintenance bills for this flat
+        custom_maint = data.get('custom_maintenance')
+        if custom_maint is not None:
+            MaintenanceBill.objects.filter(flat=flat, status='pending').update(payable_amount=custom_maint)
+
         return Response({
             'success': True,
             'message': 'Tenant registered successfully with active login credentials!',
@@ -638,6 +653,11 @@ class TenantMoveOutView(APIView):
 
         tenant.status = 'inactive'
         tenant.save()
+
+        # Revert any pending bills for this flat to the society's standard rate
+        society = request.user.society
+        if society and society.standard_rate is not None:
+            MaintenanceBill.objects.filter(flat=tenant.flat, status='pending').update(payable_amount=society.standard_rate)
 
         Occupancy.objects.filter(flat=tenant.flat, resident__user=tenant.user, occupancy_type='Tenant').update(is_primary=False)
         owner_resident = Resident.objects.filter(flat=tenant.flat, user=tenant.owner).first()

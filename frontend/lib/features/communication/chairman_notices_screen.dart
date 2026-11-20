@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/datasource/communication_api_service.dart';
 import '../../data/datasource/api_service.dart';
+import 'notice_widgets.dart';
 
 class ChairmanNoticesScreen extends StatefulWidget {
   const ChairmanNoticesScreen({super.key});
@@ -51,18 +52,6 @@ class _ChairmanNoticesScreenState extends State<ChairmanNoticesScreen> {
       }
     } catch (error) {
       debugPrint('[ChairmanNotices] Failed to load blocks: $error');
-    }
-  }
-
-  Color _getPriorityColor(String priority) {
-    switch (priority.toLowerCase()) {
-      case 'urgent':
-        return Colors.red.shade700;
-      case 'high':
-        return Colors.orange.shade800;
-      case 'normal':
-      default:
-        return Colors.teal;
     }
   }
 
@@ -148,8 +137,10 @@ class _ChairmanNoticesScreenState extends State<ChairmanNoticesScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: Colors.blueGrey.shade50,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) {
@@ -167,25 +158,16 @@ class _ChairmanNoticesScreenState extends State<ChairmanNoticesScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Publish Announcement',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () {
-                            titleController.dispose();
-                            descController.dispose();
-                            Navigator.pop(ctx);
-                          },
-                        ),
-                      ],
+                    NoticeComposerHeader(
+                      title: 'Publish Announcement',
+                      subtitle:
+                          'Prepare a clear, official notice for residents.',
+                      icon: Icons.campaign_outlined,
+                      onClose: () {
+                        titleController.dispose();
+                        descController.dispose();
+                        Navigator.pop(ctx);
+                      },
                     ),
                     const SizedBox(height: 14),
 
@@ -407,7 +389,11 @@ class _ChairmanNoticesScreenState extends State<ChairmanNoticesScreen> {
                             },
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        backgroundColor: Colors.teal,
+                        backgroundColor: Colors.indigo.shade900,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       child: isSubmitting
                           ? const SizedBox(
@@ -421,7 +407,6 @@ class _ChairmanNoticesScreenState extends State<ChairmanNoticesScreen> {
                           : const Text(
                               'Publish Notice',
                               style: TextStyle(
-                                color: Colors.white,
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -440,6 +425,7 @@ class _ChairmanNoticesScreenState extends State<ChairmanNoticesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.blueGrey.shade50,
       appBar: AppBar(
         title: const Text('Society Announcements'),
         leading: IconButton(
@@ -452,9 +438,10 @@ class _ChairmanNoticesScreenState extends State<ChairmanNoticesScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openPublishNoticeSheet,
-        backgroundColor: Colors.teal,
-        icon: const Icon(Icons.campaign, color: Colors.white),
-        label: const Text('Post Notice', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.indigo.shade900,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Publish notice'),
       ),
       body: FutureBuilder<List<dynamic>>(
         future: _noticesFuture,
@@ -464,167 +451,54 @@ class _ChairmanNoticesScreenState extends State<ChairmanNoticesScreen> {
           }
 
           if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    snapshot.error.toString().replaceAll('Exception: ', ''),
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: _loadNotices,
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
+            return NoticeErrorState(
+              message: snapshot.error.toString().replaceAll('Exception: ', ''),
+              onRetry: _loadNotices,
             );
           }
 
           final notices = snapshot.data ?? [];
-          if (notices.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.campaign_outlined,
-                    size: 64,
-                    color: Colors.grey.shade400,
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'No notices posted yet.',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Tap "Post Notice" to broadcast an update.',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                  ),
-                ],
-              ),
-            );
-          }
-
           return RefreshIndicator(
             onRefresh: () async => _loadNotices(),
             child: ListView.separated(
-              padding: const EdgeInsets.all(12.0),
-              itemCount: notices.length,
-              separatorBuilder: (ctx, i) => const SizedBox(height: 8),
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 104),
+              itemCount: notices.isEmpty ? 2 : notices.length + 1,
+              separatorBuilder: (ctx, i) => const SizedBox(height: 12),
               itemBuilder: (ctx, i) {
-                final item = notices[i];
-                final priority = (item['priority'] ?? 'normal')
-                    .toString()
-                    .toUpperCase();
-                final priorityColor = _getPriorityColor(
-                  item['priority'] ?? 'normal',
-                );
-                final blockScope = item['block_name'] ?? 'All Blocks';
-                final dateStr = item['created_at'] != null
-                    ? item['created_at'].toString().substring(0, 10)
-                    : '';
+                if (i == 0) {
+                  return NoticePageHeader(
+                    title: 'Society Announcements',
+                    subtitle:
+                        'Publish and manage official updates for residents across your society.',
+                    count: notices.length,
+                  );
+                }
 
-                return Card(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    side: BorderSide(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(14.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: priorityColor.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                priority,
-                                style: TextStyle(
-                                  color: priorityColor,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            Row(
-                              children: [
-                                Text(
-                                  dateStr,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.delete_outline,
-                                    size: 18,
-                                    color: Colors.redAccent,
-                                  ),
-                                  tooltip: 'Archive Notice',
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                  onPressed: () => _handleDeleteNotice(
-                                    item['notice_id'],
-                                    item['title'] ?? 'Notice',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          item['title'] ?? '',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          item['description'] ?? '',
-                          style: TextStyle(
-                            color: Colors.grey.shade800,
-                            fontSize: 13,
-                            height: 1.35,
-                          ),
-                        ),
-                        const Divider(height: 20),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.apartment,
-                              size: 14,
-                              color: Colors.grey.shade600,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Scope: $blockScope',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade700,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                if (notices.isEmpty) {
+                  return const NoticeEmptyState(
+                    title: 'No notices published',
+                    subtitle:
+                        'Use “Publish notice” to share an update with residents.',
+                  );
+                }
+
+                final item = notices[i - 1];
+                return NoticeEntryCard(
+                  title: item['title']?.toString() ?? 'Untitled notice',
+                  description: item['description']?.toString() ?? '',
+                  priority: item['priority']?.toString() ?? 'normal',
+                  scope: item['block_name']?.toString() ?? 'All Blocks',
+                  author: item['author_name']?.toString(),
+                  createdAt: item['created_at'],
+                  action: IconButton(
+                    tooltip: 'Archive notice',
+                    onPressed: () => _handleDeleteNotice(
+                      item['notice_id'].toString(),
+                      item['title']?.toString() ?? 'Notice',
                     ),
+                    icon: const Icon(Icons.archive_outlined),
+                    color: Colors.blueGrey.shade700,
                   ),
                 );
               },

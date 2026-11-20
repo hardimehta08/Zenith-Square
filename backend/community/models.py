@@ -105,7 +105,7 @@ class LostFoundItem(models.Model):
     item_id = models.CharField(primary_key=True, max_length=5)
     item_name = models.CharField(max_length=100)
     item_description = models.TextField()
-    item_status = models.CharField(max_length=20)  # e.g., 'Lost', 'Found', 'Claimed', 'Resolved'
+    item_status = models.CharField(max_length=20)  # e.g., 'Lost', 'Found', 'Claimed'
     reported_by = models.ForeignKey('core_api.Users', models.DO_NOTHING, related_name='reported_items', db_column='reported_by', blank=True, null=True)
     handled_by = models.ForeignKey('core_api.Users', models.DO_NOTHING, related_name='handled_items', db_column='handled_by', blank=True, null=True)
     item_location = models.CharField(max_length=100)
