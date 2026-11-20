@@ -539,11 +539,12 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
       final fileName =
           'FINANCIAL_REPORT_${societyName.replaceAll(' ', '_')}_$suffix.pdf';
 
-      downloadWebBinaryFile(
+      final exported = await downloadWebBinaryFile(
         fileName: fileName,
         bytes: pdfBytes,
         mimeType: 'application/pdf',
       );
+      if (!exported) return;
 
       if (mounted) {
         final messenger = ScaffoldMessenger.of(context);
@@ -554,7 +555,7 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
               children: [
                 const Icon(Icons.check_circle, color: Colors.white, size: 20),
                 const SizedBox(width: 10),
-                Expanded(child: Text('Downloaded: $fileName')),
+                Expanded(child: Text('PDF saved: $fileName')),
               ],
             ),
             backgroundColor: Colors.indigo.shade800,
@@ -568,7 +569,7 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to generate PDF: ${e.toString()}'),
+            content: Text('Failed to export PDF: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -686,7 +687,7 @@ class _TreasurerReportsScreenState extends State<TreasurerReportsScreen> {
       appBar: AppBar(
         title: const Text('Treasurer Financial Reports & Analytics'),
         elevation: 0.5,
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.teal,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),

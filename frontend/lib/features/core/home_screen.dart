@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/datasource/api_service.dart';
+import '../../utils/branding.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -60,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text('Resident Portal'),
+        title: const ZenithBrandTitle(title: 'Resident Portal'),
         elevation: 0,
         automaticallyImplyLeading: false, // Prevents phantom back button
         actions: [

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../data/datasource/api_service.dart';
+import '../../utils/branding.dart';
 
 class VerifyOtpScreen extends StatefulWidget {
   final String email;
@@ -63,9 +64,14 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Verify Account')),
+      appBar: AppBar(
+        title: const ZenithBrandTitle(
+          title: 'Verify Account',
+          logoSize: 32,
+        ),
+      ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Form(
             key: _formKey,
@@ -73,11 +79,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 20),
-                const Icon(
-                  Icons.mark_email_read_outlined,
-                  size: 72,
-                  color: Colors.blueAccent,
-                ),
+                const ZenithLogo(size: 80),
                 const SizedBox(height: 24),
                 const Text(
                   'Enter Verification Code',

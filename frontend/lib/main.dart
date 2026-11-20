@@ -42,6 +42,7 @@ import './features/security/security_guard_desk_screen.dart';
 import './features/finance/reports_screen.dart';
 import './features/finance/treasurer_reports_screen.dart';
 import './features/finance/block_secretary_finance_screen.dart';
+import 'utils/branding.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,7 +56,71 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, this.initialRoute = '/login'});
+
+  final String initialRoute;
+
+  static final Map<String, WidgetBuilder> routes = {
+    '/register': (context) => const RegisterScreen(),
+    '/login': (context) => const LoginScreen(),
+    '/home': (context) => const HomeScreen(),
+    '/forgot-password': (context) => const ForgotPasswordScreen(),
+    '/profile': (context) => const ProfileScreen(),
+    '/nominee': (context) => const NomineeScreen(),
+    '/change-password': (context) => const ChangePasswordScreen(),
+    '/finance': (context) => const FinanceScreen(),
+    '/treasurer-pay-maintenance': (context) =>
+        const FinanceScreen(showSocietyLedgerTabs: false),
+    '/complaints': (context) => const ComplaintsScreen(),
+    '/notices': (context) => const NoticesScreen(),
+    '/amenities': (context) => const AmenitiesScreen(),
+    '/vehicles': (context) => const VehiclesScreen(),
+    '/meetings': (context) => const MeetingsScreen(),
+    '/polls': (context) => const PollsScreen(),
+    '/lost-found': (context) => const LostFoundScreen(),
+    '/security': (context) => const SecurityScreen(),
+    '/chairman-home': (context) => const ChairmanHomeScreen(),
+    '/chairman-finance': (context) => const ChairmanFinanceScreen(),
+    '/chairman-complaints': (context) => const ChairmanComplaintsScreen(),
+    '/chairman-notices': (context) => const ChairmanNoticesScreen(),
+    '/chairman-amenities': (context) => const ChairmanAmenitiesScreen(),
+    '/chairman-vehicles': (context) => const ChairmanVehiclesScreen(),
+    '/chairman-meetings': (context) => const ChairmanMeetingsScreen(),
+    '/chairman-polls': (context) => const ChairmanPollsScreen(),
+    '/chairman-lost-found': (context) => const ChairmanLostFoundScreen(),
+    '/chairman-security': (context) => const ChairmanSecurityScreen(),
+    '/chairman-tenants': (context) => const TenantListScreen(),
+    '/chairman-reports': (context) => const SocietyReportsScreen(),
+    '/treasurer-home': (context) => const TreasurerHomeScreen(),
+    '/treasurer-finance': (context) => const TreasurerFinanceScreen(),
+    '/treasurer-reports': (context) => const TreasurerReportsScreen(),
+    '/treasurer-report': (context) => const TreasurerReportsScreen(),
+    '/secretary-home': (context) => const SecretaryHomeScreen(),
+    '/secretary-notices': (context) => const SecretaryNoticesScreen(),
+    '/secretary-members': (context) => const SecretaryDirectoryScreen(),
+    '/secretary-complaints': (context) => const ChairmanComplaintsScreen(),
+    '/secretary-amenities': (context) => const ChairmanAmenitiesScreen(),
+    '/secretary-assets': (context) => const ChairmanVehiclesScreen(),
+    '/secretary-lost-found': (context) => const ChairmanLostFoundScreen(),
+    '/secretary-polls': (context) => const ChairmanPollsScreen(),
+    '/secretary-meetings': (context) => const SecretaryMeetingsScreen(),
+    '/secretary-finance': (context) => const ChairmanFinanceScreen(),
+    '/secretary-security': (context) => const SecurityScreen(),
+    '/secretary-tenants': (context) => const TenantListScreen(),
+    '/society-documents': (context) => const SocietyDocumentsScreen(),
+    '/block-secretary-home': (context) => const BlockSecretaryHomeScreen(),
+    '/block-secretary-notices': (context) =>
+        const BlockSecretaryNoticesScreen(),
+    '/block-secretary-residents': (context) =>
+        const BlockSecretaryResidentsScreen(),
+    '/block-secretary-complaints': (context) =>
+        const ChairmanComplaintsScreen(),
+    '/block-secretary-finance': (context) =>
+        const BlockSecretaryFinanceScreen(),
+    '/block-secretary-security': (context) => const SecurityScreen(),
+    '/security-home': (context) => const SecurityGuardHomeScreen(),
+    '/security-guard-desk': (context) => const SecurityGuardDeskScreen(),
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -64,9 +129,40 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blueAccent,
-          brightness: Brightness.light,
+        colorScheme:
+            ColorScheme.fromSeed(
+              seedColor: ZenithBrand.teal,
+              brightness: Brightness.light,
+            ).copyWith(
+              secondary: ZenithBrand.coral,
+              secondaryContainer: ZenithBrand.paleCoral,
+            ),
+        scaffoldBackgroundColor: const Color(0xFFF7F9FA),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: ZenithBrand.teal,
+          foregroundColor: Colors.white,
+          centerTitle: false,
+          elevation: 0,
+        ),
+        tabBarTheme: const TabBarThemeData(
+          labelColor: Colors.white,
+          unselectedLabelColor: Color(0xCCFFFFFF),
+          indicatorColor: ZenithBrand.coral,
+          indicatorSize: TabBarIndicatorSize.tab,
+          labelStyle: TextStyle(fontWeight: FontWeight.w700),
+          unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: ZenithBrand.teal,
+            foregroundColor: Colors.white,
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(foregroundColor: ZenithBrand.teal),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(foregroundColor: ZenithBrand.teal),
         ),
         inputDecorationTheme: const InputDecorationTheme(
           filled: true,
@@ -88,71 +184,8 @@ class MyApp extends StatelessWidget {
           ),
         );
       },
-      initialRoute: '/login',
-      routes: {
-        '/register': (context) => const RegisterScreen(),
-        '/login': (context) => const LoginScreen(),
-        '/home': (context) => const HomeScreen(),
-        '/forgot-password': (context) => const ForgotPasswordScreen(),
-        '/profile': (context) => const ProfileScreen(),
-        '/nominee': (context) => const NomineeScreen(),
-        '/change-password': (context) => const ChangePasswordScreen(),
-        '/finance': (context) => const FinanceScreen(),
-        '/treasurer-pay-maintenance': (context) =>
-            const FinanceScreen(showSocietyLedgerTabs: false),
-        '/complaints': (context) => const ComplaintsScreen(),
-        '/notices': (context) => const NoticesScreen(),
-        '/amenities': (context) => const AmenitiesScreen(),
-        '/vehicles': (context) => const VehiclesScreen(),
-        '/meetings': (context) => const MeetingsScreen(),
-        '/polls': (context) => const PollsScreen(),
-        '/lost-found': (context) => const LostFoundScreen(),
-        '/security': (context) => const SecurityScreen(),
-
-        '/chairman-home': (context) => const ChairmanHomeScreen(),
-        '/chairman-finance': (context) => const ChairmanFinanceScreen(),
-        '/chairman-complaints': (context) => const ChairmanComplaintsScreen(),
-        '/chairman-notices': (context) => const ChairmanNoticesScreen(),
-        '/chairman-amenities': (context) => const ChairmanAmenitiesScreen(),
-        '/chairman-vehicles': (context) => const ChairmanVehiclesScreen(),
-        '/chairman-meetings': (context) => const ChairmanMeetingsScreen(),
-        '/chairman-polls': (context) => const ChairmanPollsScreen(),
-        '/chairman-lost-found': (context) => const ChairmanLostFoundScreen(),
-        '/chairman-security': (context) => const ChairmanSecurityScreen(),
-        '/chairman-tenants': (context) => const TenantListScreen(),
-        '/chairman-reports': (context) => const SocietyReportsScreen(),
-        '/treasurer-home': (context) => const TreasurerHomeScreen(),
-        '/treasurer-finance': (context) => const TreasurerFinanceScreen(),
-        '/treasurer-reports': (context) => const TreasurerReportsScreen(),
-        '/treasurer-report': (context) => const TreasurerReportsScreen(),
-        '/secretary-home': (context) => const SecretaryHomeScreen(),
-        '/secretary-notices': (context) => const SecretaryNoticesScreen(),
-        '/secretary-members': (context) => const SecretaryDirectoryScreen(),
-        '/secretary-complaints': (context) => const ChairmanComplaintsScreen(),
-        '/secretary-amenities': (context) => const ChairmanAmenitiesScreen(),
-        '/secretary-assets': (context) => const ChairmanVehiclesScreen(),
-        '/secretary-lost-found': (context) => const ChairmanLostFoundScreen(),
-        '/secretary-polls': (context) => const ChairmanPollsScreen(),
-        '/secretary-meetings': (context) => const SecretaryMeetingsScreen(),
-        '/secretary-finance': (context) => const ChairmanFinanceScreen(),
-        '/secretary-security': (context) => const SecurityScreen(),
-        '/secretary-tenants': (context) => const TenantListScreen(),
-        '/society-documents': (context) => const SocietyDocumentsScreen(),
-
-        '/block-secretary-home': (context) => const BlockSecretaryHomeScreen(),
-        '/block-secretary-notices': (context) =>
-            const BlockSecretaryNoticesScreen(),
-        '/block-secretary-residents': (context) =>
-            const BlockSecretaryResidentsScreen(),
-        '/block-secretary-complaints': (context) =>
-            const ChairmanComplaintsScreen(),
-        '/block-secretary-finance': (context) =>
-            const BlockSecretaryFinanceScreen(),
-        '/block-secretary-security': (context) => const SecurityScreen(),
-
-        '/security-home': (context) => const SecurityGuardHomeScreen(),
-        '/security-guard-desk': (context) => const SecurityGuardDeskScreen(),
-      },
+      initialRoute: initialRoute,
+      routes: routes,
     );
   }
 }

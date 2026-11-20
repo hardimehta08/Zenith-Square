@@ -173,11 +173,12 @@ class FinancialDocumentHelper {
     try {
       final pdfBytes = await generatePdfBytes(doc);
 
-      downloadWebBinaryFile(
+      final exported = await downloadWebBinaryFile(
         fileName: fileName,
         bytes: pdfBytes,
         mimeType: 'application/pdf',
       );
+      if (!exported) return;
 
       if (!context.mounted) return;
       final messenger = ScaffoldMessenger.of(context);
@@ -200,7 +201,7 @@ class FinancialDocumentHelper {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Downloaded $fileName',
+                  'PDF saved: $fileName',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -215,9 +216,19 @@ class FinancialDocumentHelper {
           action: SnackBarAction(
             label: 'Open',
             textColor: Colors.amberAccent,
-            onPressed: () {
+            onPressed: () async {
               messenger.hideCurrentSnackBar();
-              openWebPdf(pdfBytes);
+              try {
+                await openWebPdf(pdfBytes);
+              } catch (e) {
+                if (!context.mounted) return;
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to open PDF: $e'),
+                    backgroundColor: Colors.red.shade800,
+                  ),
+                );
+              }
             },
           ),
         ),
@@ -232,7 +243,7 @@ class FinancialDocumentHelper {
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 3),
           showCloseIcon: true,
-          content: Text('Failed to generate PDF: $e'),
+          content: Text('Failed to export PDF: $e'),
         ),
       );
     }
@@ -240,13 +251,8 @@ class FinancialDocumentHelper {
 
   /// Open or Print PDF directly in browser
   static Future<void> printDocument(FinancialDocument doc) async {
-    try {
-      final pdfBytes = await generatePdfBytes(doc);
-      openWebPdf(pdfBytes);
-    } catch (_) {
-      final html = generateHtmlDocument(doc);
-      printWebDocument(html);
-    }
+    final pdfBytes = await generatePdfBytes(doc);
+    await openWebPdf(pdfBytes);
   }
 
   /// Convert numbers to English words (Rupees)
@@ -1157,8 +1163,8 @@ class _FinancialDocumentDialog extends StatelessWidget {
                               'Download PDF',
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
-                            onPressed: () {
-                              FinancialDocumentHelper.downloadDocument(
+                            onPressed: () async {
+                              await FinancialDocumentHelper.downloadDocument(
                                 context,
                                 doc,
                               );
@@ -1175,8 +1181,20 @@ class _FinancialDocumentDialog extends StatelessWidget {
                             ),
                             icon: const Icon(Icons.print_outlined, size: 18),
                             label: const Text('Print / View PDF'),
-                            onPressed: () {
-                              FinancialDocumentHelper.printDocument(doc);
+                            onPressed: () async {
+                              try {
+                                await FinancialDocumentHelper.printDocument(
+                                  doc,
+                                );
+                              } catch (e) {
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Failed to open PDF: $e'),
+                                    backgroundColor: Colors.red.shade800,
+                                  ),
+                                );
+                              }
                             },
                           ),
                         ),

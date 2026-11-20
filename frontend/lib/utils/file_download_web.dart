@@ -2,24 +2,24 @@
 import 'dart:convert';
 import 'dart:html' as html;
 
-void downloadWebFile({
+Future<bool> downloadWebFile({
   required String fileName,
   required String content,
   String mimeType = 'text/html',
 }) {
   final bytes = utf8.encode(content);
-  downloadWebBinaryFile(
+  return downloadWebBinaryFile(
     fileName: fileName,
     bytes: bytes,
     mimeType: mimeType,
   );
 }
 
-void downloadWebBinaryFile({
+Future<bool> downloadWebBinaryFile({
   required String fileName,
   required List<int> bytes,
   String mimeType = 'application/pdf',
-}) {
+}) async {
   final blob = html.Blob([bytes], mimeType);
   final url = html.Url.createObjectUrlFromBlob(blob);
   final anchor = html.AnchorElement(href: url)
@@ -30,6 +30,7 @@ void downloadWebBinaryFile({
   anchor.click();
   html.document.body?.children.remove(anchor);
   html.Url.revokeObjectUrl(url);
+  return true;
 }
 
 void printWebDocument(String htmlContent) {
@@ -42,7 +43,7 @@ void printWebDocument(String htmlContent) {
   });
 }
 
-void openWebPdf(List<int> bytes) {
+Future<void> openWebPdf(List<int> bytes) async {
   final blob = html.Blob([bytes], 'application/pdf');
   final url = html.Url.createObjectUrlFromBlob(blob);
   html.window.open(url, '_blank');

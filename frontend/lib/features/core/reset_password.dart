@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../data/datasource/api_service.dart';
+import '../../utils/branding.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String email;
@@ -102,7 +103,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Set New Password')),
+      appBar: AppBar(
+        title: const ZenithBrandTitle(
+          title: 'Set New Password',
+          logoSize: 32,
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),

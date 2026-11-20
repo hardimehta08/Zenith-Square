@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import './api_service.dart';
 
 class FacilitiesApiService {
-  static const String baseUrl = 'http://127.0.0.1:8000/api/facilities';
+  static const String baseUrl = '${ApiService.baseUrl}/facilities';
 
   // 1. Fetch All Amenities
   static Future<List<dynamic>> fetchAmenities() async {

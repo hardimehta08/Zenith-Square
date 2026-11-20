@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/datasource/api_service.dart';
+import '../../utils/branding.dart';
 import '../../data/datasource/finance_api_service.dart';
 import '../finance/treasurer_finance_screen.dart';
 
@@ -69,7 +70,7 @@ class _TreasurerHomeScreenState extends State<TreasurerHomeScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text('Treasurer Desk'),
+        title: const ZenithBrandTitle(title: 'Treasurer Desk'),
         elevation: 0,
         automaticallyImplyLeading: false,
         actions: [

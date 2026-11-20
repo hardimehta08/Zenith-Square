@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../data/datasource/security_api_service.dart';
+import '../../utils/branding.dart';
 
 class SecurityGuardDeskScreen extends StatefulWidget {
   final int initialTabIndex;
@@ -58,9 +59,9 @@ class _SecurityGuardDeskScreenState extends State<SecurityGuardDeskScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Colors.blue.shade900,
-          unselectedLabelColor: Colors.grey.shade600,
-          indicatorColor: Colors.blue.shade900,
+          labelColor: Colors.white,
+          unselectedLabelColor: const Color(0xCCFFFFFF),
+          indicatorColor: ZenithBrand.coral,
           indicatorWeight: 3,
           tabs: const [
             Tab(
@@ -215,7 +216,11 @@ class _GuardAlertsTabState extends State<_GuardAlertsTab> {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.crisis_alert, color: Colors.red.shade700, size: 26),
+                          Icon(
+                            Icons.crisis_alert,
+                            color: Colors.red.shade700,
+                            size: 26,
+                          ),
                           const SizedBox(width: 8),
                           const Text(
                             'Broadcast Emergency SOS',
@@ -254,20 +259,26 @@ class _GuardAlertsTabState extends State<_GuardAlertsTab> {
                         avatar: Icon(
                           cat['icon'] as IconData,
                           size: 16,
-                          color: isSelected ? Colors.white : Colors.red.shade800,
+                          color: isSelected
+                              ? Colors.white
+                              : Colors.red.shade800,
                         ),
                         label: Text(cat['label'] as String),
                         selected: isSelected,
                         selectedColor: Colors.red.shade700,
                         backgroundColor: Colors.red.shade50,
                         labelStyle: TextStyle(
-                          color: isSelected ? Colors.white : Colors.red.shade900,
+                          color: isSelected
+                              ? Colors.white
+                              : Colors.red.shade900,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
                         onSelected: (val) {
                           if (val) {
-                            setModalState(() => selectedType = cat['label'] as String);
+                            setModalState(
+                              () => selectedType = cat['label'] as String,
+                            );
                           }
                         },
                       );
@@ -280,7 +291,8 @@ class _GuardAlertsTabState extends State<_GuardAlertsTab> {
                     maxLines: 3,
                     decoration: InputDecoration(
                       labelText: 'Emergency Details & Location *',
-                      hintText: 'e.g. Smoke detected near Block B Lift, need fire assistance',
+                      hintText:
+                          'e.g. Smoke detected near Block B Lift, need fire assistance',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -308,12 +320,19 @@ class _GuardAlertsTabState extends State<_GuardAlertsTab> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.error_outline, size: 18, color: Colors.red.shade800),
+                          Icon(
+                            Icons.error_outline,
+                            size: 18,
+                            color: Colors.red.shade800,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               sheetError!,
-                              style: TextStyle(color: Colors.red.shade900, fontSize: 13),
+                              style: TextStyle(
+                                color: Colors.red.shade900,
+                                fontSize: 13,
+                              ),
                             ),
                           ),
                         ],
@@ -332,16 +351,18 @@ class _GuardAlertsTabState extends State<_GuardAlertsTab> {
                               sheetError = null;
                             });
                             try {
-                              final res = await SecurityApiService.triggerEmergencyAlert(
-                                alertType: selectedType,
-                                description: descController.text.trim(),
-                              );
+                              final res =
+                                  await SecurityApiService.triggerEmergencyAlert(
+                                    alertType: selectedType,
+                                    description: descController.text.trim(),
+                                  );
                               if (mounted) {
                                 if (ctx.mounted) Navigator.pop(ctx);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      res['message'] ?? 'Alert broadcasted successfully!',
+                                      res['message'] ??
+                                          'Alert broadcasted successfully!',
                                     ),
                                     backgroundColor: Colors.red.shade800,
                                   ),
@@ -351,7 +372,10 @@ class _GuardAlertsTabState extends State<_GuardAlertsTab> {
                             } catch (e) {
                               setModalState(() {
                                 isSubmitting = false;
-                                sheetError = e.toString().replaceAll('Exception: ', '');
+                                sheetError = e.toString().replaceAll(
+                                  'Exception: ',
+                                  '',
+                                );
                               });
                             }
                           },
@@ -367,7 +391,10 @@ class _GuardAlertsTabState extends State<_GuardAlertsTab> {
                         : const Icon(Icons.crisis_alert),
                     label: Text(
                       isSubmitting ? 'BROADCASTING...' : 'BROADCAST SOS NOW',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red.shade700,
@@ -438,7 +465,11 @@ class _GuardAlertsTabState extends State<_GuardAlertsTab> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.red.shade400,
+                      ),
                       const SizedBox(height: 10),
                       Text(
                         snapshot.error.toString().replaceAll('Exception: ', ''),
@@ -460,7 +491,9 @@ class _GuardAlertsTabState extends State<_GuardAlertsTab> {
                   onRefresh: () async => _loadAlerts(),
                   child: ListView(
                     children: [
-                      SizedBox(height: MediaQuery.of(context).size.height * 0.15),
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.15,
+                      ),
                       Center(
                         child: Column(
                           children: [
@@ -504,20 +537,29 @@ class _GuardAlertsTabState extends State<_GuardAlertsTab> {
               return RefreshIndicator(
                 onRefresh: () async => _loadAlerts(),
                 child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12.0,
+                    vertical: 4.0,
+                  ),
                   itemCount: alerts.length,
                   separatorBuilder: (ctx, i) => const SizedBox(height: 10),
                   itemBuilder: (ctx, i) {
                     final a = alerts[i];
                     final dateStr = a['created_at'] != null
-                        ? a['created_at'].toString().substring(0, 16).replaceAll('T', ' ')
+                        ? a['created_at']
+                              .toString()
+                              .substring(0, 16)
+                              .replaceAll('T', ' ')
                         : '';
 
                     return Card(
                       elevation: 0,
                       color: Colors.red.shade50,
                       shape: RoundedRectangleBorder(
-                        side: BorderSide(color: Colors.red.shade200, width: 1.2),
+                        side: BorderSide(
+                          color: Colors.red.shade200,
+                          width: 1.2,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Padding(
@@ -613,7 +655,10 @@ class _GuardAlertsTabState extends State<_GuardAlertsTab> {
                                   a['alert_id'],
                                   a['alert_type'] ?? 'Alert',
                                 ),
-                                icon: const Icon(Icons.check_circle_outline, size: 16),
+                                icon: const Icon(
+                                  Icons.check_circle_outline,
+                                  size: 16,
+                                ),
                                 label: const Text('Mark Resolved'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.green.shade700,
@@ -721,7 +766,9 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(res['message'] ?? 'Visitor exit timestamp recorded.'),
+              content: Text(
+                res['message'] ?? 'Visitor exit timestamp recorded.',
+              ),
               backgroundColor: Colors.blue.shade800,
             ),
           );
@@ -856,7 +903,10 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
 
                     // Society Details Badge Card
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.blue.shade50,
                         borderRadius: BorderRadius.circular(8),
@@ -864,7 +914,11 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.location_city, color: Colors.blue.shade900, size: 22),
+                          Icon(
+                            Icons.location_city,
+                            color: Colors.blue.shade900,
+                            size: 22,
+                          ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Column(
@@ -889,7 +943,10 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.blue.shade100,
                               borderRadius: BorderRadius.circular(6),
@@ -926,7 +983,9 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                                 child: SizedBox(
                                   width: 16,
                                   height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 ),
                               )
                             : null,
@@ -943,8 +1002,9 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                             isLookingUp = false;
                             if (existing != null &&
                                 existing['visitor_name'] != null) {
-                              nameController.text =
-                                  existing['visitor_name'].toString().trim();
+                              nameController.text = existing['visitor_name']
+                                  .toString()
+                                  .trim();
                             }
                           });
                         }
@@ -1007,7 +1067,8 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                         return DropdownMenuItem<String>(
                           value: f['flat_id'] as String,
                           child: Text(
-                            f['display_label'] ?? 'Flat $flatNum - Block $block ($socName)',
+                            f['display_label'] ??
+                                'Flat $flatNum - Block $block ($socName)',
                             overflow: TextOverflow.ellipsis,
                           ),
                         );
@@ -1034,10 +1095,7 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                       items: purposeOptions.map((p) {
                         return DropdownMenuItem<String>(
                           value: p,
-                          child: Text(
-                            p,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          child: Text(p, overflow: TextOverflow.ellipsis),
                         );
                       }).toList(),
                       onChanged: (val) {
@@ -1053,7 +1111,8 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                       controller: notesController,
                       decoration: InputDecoration(
                         labelText: 'Specific Notes / Details (Optional)',
-                        hintText: 'e.g. Amazon Package, AC Repair, Personal Visit',
+                        hintText:
+                            'e.g. Amazon Package, AC Repair, Personal Visit',
                         prefixIcon: const Icon(Icons.edit_note_outlined),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -1072,12 +1131,19 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.error_outline, size: 18, color: Colors.red.shade800),
+                            Icon(
+                              Icons.error_outline,
+                              size: 18,
+                              color: Colors.red.shade800,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 modalError!,
-                                style: TextStyle(color: Colors.red.shade900, fontSize: 13),
+                                style: TextStyle(
+                                  color: Colors.red.shade900,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           ],
@@ -1097,23 +1163,26 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                               });
 
                               try {
-                                final finalPurpose = notesController.text.trim().isNotEmpty
+                                final finalPurpose =
+                                    notesController.text.trim().isNotEmpty
                                     ? '$selectedPurpose (${notesController.text.trim()})'
                                     : selectedPurpose;
 
-                                final res = await SecurityApiService.logVisitorEntry(
-                                  visitorName: nameController.text.trim(),
-                                  visitorPhone: phoneController.text.trim(),
-                                  flatId: selectedFlatId!,
-                                  purpose: finalPurpose,
-                                );
+                                final res =
+                                    await SecurityApiService.logVisitorEntry(
+                                      visitorName: nameController.text.trim(),
+                                      visitorPhone: phoneController.text.trim(),
+                                      flatId: selectedFlatId!,
+                                      purpose: finalPurpose,
+                                    );
 
                                 if (mounted) {
                                   if (ctx.mounted) Navigator.pop(ctx);
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        res['message'] ?? 'Visitor entry logged successfully!',
+                                        res['message'] ??
+                                            'Visitor entry logged successfully!',
                                       ),
                                       backgroundColor: Colors.green.shade800,
                                     ),
@@ -1123,8 +1192,10 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                               } catch (e) {
                                 setModalState(() {
                                   isSubmitting = false;
-                                  modalError =
-                                      e.toString().replaceAll('Exception: ', '');
+                                  modalError = e.toString().replaceAll(
+                                    'Exception: ',
+                                    '',
+                                  );
                                 });
                               }
                             },
@@ -1139,8 +1210,13 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                             )
                           : const Icon(Icons.check_circle_outline),
                       label: Text(
-                        isSubmitting ? 'LOGGING ENTRY...' : 'CONFIRM GATE ENTRY',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        isSubmitting
+                            ? 'LOGGING ENTRY...'
+                            : 'CONFIRM GATE ENTRY',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue.shade900,
@@ -1163,13 +1239,20 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
 
   IconData _getPurposeIcon(String purpose) {
     final p = purpose.toLowerCase();
-    if (p.contains('deliver') || p.contains('courier') || p.contains('package')) {
+    if (p.contains('deliver') ||
+        p.contains('courier') ||
+        p.contains('package')) {
       return Icons.local_shipping_outlined;
     }
-    if (p.contains('cab') || p.contains('taxi') || p.contains('uber') || p.contains('ola')) {
+    if (p.contains('cab') ||
+        p.contains('taxi') ||
+        p.contains('uber') ||
+        p.contains('ola')) {
       return Icons.local_taxi_outlined;
     }
-    if (p.contains('repair') || p.contains('maintain') || p.contains('service')) {
+    if (p.contains('repair') ||
+        p.contains('maintain') ||
+        p.contains('service')) {
       return Icons.handyman_outlined;
     }
     if (p.contains('maid') || p.contains('help') || p.contains('clean')) {
@@ -1192,7 +1275,10 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                   controller: _searchController,
                   decoration: InputDecoration(
                     hintText: 'Search by visitor, phone, flat...',
-                    hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                    hintStyle: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade500,
+                    ),
                     prefixIcon: const Icon(Icons.search, size: 20),
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(vertical: 10),
@@ -1218,7 +1304,8 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                           )
                         : null,
                   ),
-                  onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
+                  onChanged: (val) =>
+                      setState(() => _searchQuery = val.trim().toLowerCase()),
                 ),
               ),
               const SizedBox(width: 8),
@@ -1229,7 +1316,10 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue.shade900,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -1249,8 +1339,12 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                 selected: _filterStatus == 'all',
                 selectedColor: Colors.blue.shade100,
                 labelStyle: TextStyle(
-                  color: _filterStatus == 'all' ? Colors.blue.shade900 : Colors.black87,
-                  fontWeight: _filterStatus == 'all' ? FontWeight.bold : FontWeight.normal,
+                  color: _filterStatus == 'all'
+                      ? Colors.blue.shade900
+                      : Colors.black87,
+                  fontWeight: _filterStatus == 'all'
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                   fontSize: 12,
                 ),
                 onSelected: (val) => setState(() => _filterStatus = 'all'),
@@ -1275,8 +1369,12 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                 selected: _filterStatus == 'inside',
                 selectedColor: Colors.green.shade100,
                 labelStyle: TextStyle(
-                  color: _filterStatus == 'inside' ? Colors.green.shade900 : Colors.black87,
-                  fontWeight: _filterStatus == 'inside' ? FontWeight.bold : FontWeight.normal,
+                  color: _filterStatus == 'inside'
+                      ? Colors.green.shade900
+                      : Colors.black87,
+                  fontWeight: _filterStatus == 'inside'
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                   fontSize: 12,
                 ),
                 onSelected: (val) => setState(() => _filterStatus = 'inside'),
@@ -1287,8 +1385,12 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                 selected: _filterStatus == 'exited',
                 selectedColor: Colors.grey.shade300,
                 labelStyle: TextStyle(
-                  color: _filterStatus == 'exited' ? Colors.grey.shade900 : Colors.black87,
-                  fontWeight: _filterStatus == 'exited' ? FontWeight.bold : FontWeight.normal,
+                  color: _filterStatus == 'exited'
+                      ? Colors.grey.shade900
+                      : Colors.black87,
+                  fontWeight: _filterStatus == 'exited'
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                   fontSize: 12,
                 ),
                 onSelected: (val) => setState(() => _filterStatus = 'exited'),
@@ -1311,7 +1413,11 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.red.shade400,
+                      ),
                       const SizedBox(height: 10),
                       Text(
                         snapshot.error.toString().replaceAll('Exception: ', ''),
@@ -1338,13 +1444,25 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
 
                 // Search Filter (Visitor name, phone, flat, block, purpose, host resident, guard)
                 if (_searchQuery.isNotEmpty) {
-                  final name = (l['visitor_name'] ?? '').toString().toLowerCase();
-                  final phone = (l['visitor_phone'] ?? '').toString().toLowerCase();
-                  final flat = (l['flat_number'] ?? '').toString().toLowerCase();
-                  final block = (l['block_name'] ?? '').toString().toLowerCase();
+                  final name = (l['visitor_name'] ?? '')
+                      .toString()
+                      .toLowerCase();
+                  final phone = (l['visitor_phone'] ?? '')
+                      .toString()
+                      .toLowerCase();
+                  final flat = (l['flat_number'] ?? '')
+                      .toString()
+                      .toLowerCase();
+                  final block = (l['block_name'] ?? '')
+                      .toString()
+                      .toLowerCase();
                   final purpose = (l['purpose'] ?? '').toString().toLowerCase();
-                  final resident = (l['resident_name'] ?? '').toString().toLowerCase();
-                  final guard = (l['recorded_by_name'] ?? '').toString().toLowerCase();
+                  final resident = (l['resident_name'] ?? '')
+                      .toString()
+                      .toLowerCase();
+                  final guard = (l['recorded_by_name'] ?? '')
+                      .toString()
+                      .toLowerCase();
 
                   if (!name.contains(_searchQuery) &&
                       !phone.contains(_searchQuery) &&
@@ -1364,11 +1482,17 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                   onRefresh: () async => _loadVisitors(),
                   child: ListView(
                     children: [
-                      SizedBox(height: MediaQuery.of(context).size.height * 0.15),
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.15,
+                      ),
                       Center(
                         child: Column(
                           children: [
-                            Icon(Icons.people_outline, size: 54, color: Colors.grey.shade400),
+                            Icon(
+                              Icons.people_outline,
+                              size: 54,
+                              color: Colors.grey.shade400,
+                            ),
                             const SizedBox(height: 12),
                             Text(
                               _searchQuery.isNotEmpty
@@ -1383,7 +1507,10 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                             const SizedBox(height: 6),
                             Text(
                               'Tap "+ Log Visitor" above to register new visitors.',
-                              style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 12,
+                              ),
                             ),
                           ],
                         ),
@@ -1396,32 +1523,54 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
               return RefreshIndicator(
                 onRefresh: () async => _loadVisitors(),
                 child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12.0,
+                    vertical: 6.0,
+                  ),
                   itemCount: filtered.length,
                   separatorBuilder: (ctx, i) => const SizedBox(height: 8),
                   itemBuilder: (ctx, i) {
                     final log = filtered[i];
                     final isInside = (log['exit_time'] == null);
-                    final entryStr = log['entry_time']?.toString().substring(0, 16).replaceAll('T', ' ') ?? '--';
-                    final exitStr = log['exit_time']?.toString().substring(0, 16).replaceAll('T', ' ');
-                    final socName = (log['society_name'] != null && log['society_name'].toString().isNotEmpty)
+                    final entryStr =
+                        log['entry_time']
+                            ?.toString()
+                            .substring(0, 16)
+                            .replaceAll('T', ' ') ??
+                        '--';
+                    final exitStr = log['exit_time']
+                        ?.toString()
+                        .substring(0, 16)
+                        .replaceAll('T', ' ');
+                    final socName =
+                        (log['society_name'] != null &&
+                            log['society_name'].toString().isNotEmpty)
                         ? log['society_name'].toString()
                         : 'Serene Heights';
-                    final rawFlatNum = (log['flat_number'] ?? '').toString().trim();
-                    final rawBlock = (log['block_name'] ?? '').toString().trim();
+                    final rawFlatNum = (log['flat_number'] ?? '')
+                        .toString()
+                        .trim();
+                    final rawBlock = (log['block_name'] ?? '')
+                        .toString()
+                        .trim();
                     final flatLabel = rawFlatNum.isNotEmpty
                         ? 'Flat $rawFlatNum - Block ${rawBlock.isNotEmpty ? rawBlock : "A"}'
-                        : (log['flat_id'] != null && log['flat_id'].toString().isNotEmpty
-                            ? 'Flat ${log['flat_id']}'
-                            : 'Flat Details Pending');
-                    final hostResident = (log['resident_name'] ?? '').toString().trim();
+                        : (log['flat_id'] != null &&
+                                  log['flat_id'].toString().isNotEmpty
+                              ? 'Flat ${log['flat_id']}'
+                              : 'Flat Details Pending');
+                    final hostResident = (log['resident_name'] ?? '')
+                        .toString()
+                        .trim();
 
                     return Card(
                       elevation: 0,
                       color: Colors.white,
                       shape: RoundedRectangleBorder(
                         side: BorderSide(
-                          color: isInside ? Colors.green.shade300 : Colors.grey.shade200,
+                          color: isInside
+                              ? Colors.green.shade300
+                              : Colors.grey.shade200,
                           width: isInside ? 1.4 : 1.0,
                         ),
                         borderRadius: BorderRadius.circular(12),
@@ -1453,7 +1602,8 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           log['visitor_name'] ?? 'Visitor',
@@ -1513,7 +1663,9 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                                     decoration: BoxDecoration(
                                       color: Colors.blue.shade50,
                                       borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: Colors.blue.shade200),
+                                      border: Border.all(
+                                        color: Colors.blue.shade200,
+                                      ),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
@@ -1544,7 +1696,9 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                                       decoration: BoxDecoration(
                                         color: Colors.purple.shade50,
                                         borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(color: Colors.purple.shade200),
+                                        border: Border.all(
+                                          color: Colors.purple.shade200,
+                                        ),
                                       ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
@@ -1574,7 +1728,9 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                                     decoration: BoxDecoration(
                                       color: Colors.amber.shade50,
                                       borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: Colors.amber.shade200),
+                                      border: Border.all(
+                                        color: Colors.amber.shade200,
+                                      ),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
@@ -1586,7 +1742,9 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                                         ),
                                         const SizedBox(width: 4),
                                         ConstrainedBox(
-                                          constraints: const BoxConstraints(maxWidth: 160),
+                                          constraints: const BoxConstraints(
+                                            maxWidth: 160,
+                                          ),
                                           child: Text(
                                             log['purpose'] ?? 'Visit',
                                             overflow: TextOverflow.ellipsis,
@@ -1624,10 +1782,12 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
 
                               // Timestamp & Action Buttons Row
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'In: $entryStr',
@@ -1657,14 +1817,25 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                                   Row(
                                     children: [
                                       TextButton.icon(
-                                        onPressed: () => _showVisitorDetailsModal(log),
-                                        icon: const Icon(Icons.info_outline, size: 14),
-                                        label: const Text('Details', style: TextStyle(fontSize: 12)),
+                                        onPressed: () =>
+                                            _showVisitorDetailsModal(log),
+                                        icon: const Icon(
+                                          Icons.info_outline,
+                                          size: 14,
+                                        ),
+                                        label: const Text(
+                                          'Details',
+                                          style: TextStyle(fontSize: 12),
+                                        ),
                                         style: TextButton.styleFrom(
                                           foregroundColor: Colors.blue.shade800,
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
                                           minimumSize: Size.zero,
-                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                          tapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
                                         ),
                                       ),
                                       if (isInside) ...[
@@ -1674,17 +1845,22 @@ class _GuardVisitorLogsTabState extends State<_GuardVisitorLogsTab> {
                                             log['log_id'] ?? log['logs_id'],
                                             log['visitor_name'] ?? 'Visitor',
                                           ),
-                                          icon: const Icon(Icons.exit_to_app, size: 16),
+                                          icon: const Icon(
+                                            Icons.exit_to_app,
+                                            size: 16,
+                                          ),
                                           label: const Text('Mark Exit'),
                                           style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.blue.shade800,
+                                            backgroundColor:
+                                                Colors.blue.shade800,
                                             foregroundColor: Colors.white,
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: 12,
                                               vertical: 6,
                                             ),
                                             shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                           ),
                                         ),
@@ -1767,8 +1943,12 @@ class _GuardResidentVehiclesTabState extends State<_GuardResidentVehiclesTab> {
               TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Search plate (GJ01...), resident, flat, slot, phone...',
-                  hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                  hintText:
+                      'Search plate (GJ01...), resident, flat, slot, phone...',
+                  hintStyle: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade500,
+                  ),
                   prefixIcon: const Icon(Icons.search, size: 20),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
@@ -1781,7 +1961,10 @@ class _GuardResidentVehiclesTabState extends State<_GuardResidentVehiclesTab> {
                       : null,
                   filled: true,
                   fillColor: Colors.grey.shade50,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide(color: Colors.grey.shade300),
@@ -1792,7 +1975,10 @@ class _GuardResidentVehiclesTabState extends State<_GuardResidentVehiclesTab> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.blue.shade900, width: 1.5),
+                    borderSide: BorderSide(
+                      color: Colors.blue.shade900,
+                      width: 1.5,
+                    ),
                   ),
                 ),
                 onChanged: (val) =>
@@ -1807,9 +1993,17 @@ class _GuardResidentVehiclesTabState extends State<_GuardResidentVehiclesTab> {
                   children: [
                     _buildFilterChip('All Vehicles', 'all'),
                     const SizedBox(width: 8),
-                    _buildFilterChip('4-Wheelers', '4_wheeler', icon: Icons.directions_car),
+                    _buildFilterChip(
+                      '4-Wheelers',
+                      '4_wheeler',
+                      icon: Icons.directions_car,
+                    ),
                     const SizedBox(width: 8),
-                    _buildFilterChip('2-Wheelers', '2_wheeler', icon: Icons.two_wheeler),
+                    _buildFilterChip(
+                      '2-Wheelers',
+                      '2_wheeler',
+                      icon: Icons.two_wheeler,
+                    ),
                   ],
                 ),
               ),
@@ -1831,7 +2025,11 @@ class _GuardResidentVehiclesTabState extends State<_GuardResidentVehiclesTab> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.red.shade400,
+                      ),
                       const SizedBox(height: 10),
                       Text(
                         snapshot.error.toString().replaceAll('Exception: ', ''),
@@ -1849,17 +2047,27 @@ class _GuardResidentVehiclesTabState extends State<_GuardResidentVehiclesTab> {
 
               final allVehicles = snapshot.data ?? [];
               final filtered = allVehicles.where((v) {
-                final vType = (v['vehicle_type'] ?? '').toString().toLowerCase();
-                if (_typeFilter == '4_wheeler' && !vType.contains('4')) return false;
-                if (_typeFilter == '2_wheeler' && !vType.contains('2')) return false;
+                final vType = (v['vehicle_type'] ?? '')
+                    .toString()
+                    .toLowerCase();
+                if (_typeFilter == '4_wheeler' && !vType.contains('4'))
+                  return false;
+                if (_typeFilter == '2_wheeler' && !vType.contains('2'))
+                  return false;
 
                 if (_searchQuery.isEmpty) return true;
-                final plate = (v['vehicle_number'] ?? '').toString().toLowerCase();
-                final resident = (v['resident_name'] ?? '').toString().toLowerCase();
+                final plate = (v['vehicle_number'] ?? '')
+                    .toString()
+                    .toLowerCase();
+                final resident = (v['resident_name'] ?? '')
+                    .toString()
+                    .toLowerCase();
                 final flat = (v['flat_number'] ?? '').toString().toLowerCase();
                 final block = (v['block_name'] ?? '').toString().toLowerCase();
                 final slot = (v['parking_slot'] ?? '').toString().toLowerCase();
-                final phone = (v['resident_phone'] ?? '').toString().toLowerCase();
+                final phone = (v['resident_phone'] ?? '')
+                    .toString()
+                    .toLowerCase();
 
                 return plate.contains(_searchQuery) ||
                     resident.contains(_searchQuery) ||
@@ -1870,17 +2078,24 @@ class _GuardResidentVehiclesTabState extends State<_GuardResidentVehiclesTab> {
               }).toList();
 
               final fourWheelerCount = allVehicles
-                  .where((v) => (v['vehicle_type'] ?? '').toString().contains('4'))
+                  .where(
+                    (v) => (v['vehicle_type'] ?? '').toString().contains('4'),
+                  )
                   .length;
               final twoWheelerCount = allVehicles
-                  .where((v) => (v['vehicle_type'] ?? '').toString().contains('2'))
+                  .where(
+                    (v) => (v['vehicle_type'] ?? '').toString().contains('2'),
+                  )
                   .length;
 
               return Column(
                 children: [
                   // Guard Status Summary Banner
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     color: Colors.grey.shade50,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1896,7 +2111,10 @@ class _GuardResidentVehiclesTabState extends State<_GuardResidentVehiclesTab> {
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.blue.shade50,
                                 borderRadius: BorderRadius.circular(12),
@@ -1913,7 +2131,10 @@ class _GuardResidentVehiclesTabState extends State<_GuardResidentVehiclesTab> {
                             ),
                             const SizedBox(width: 6),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.teal.shade50,
                                 borderRadius: BorderRadius.circular(12),
@@ -1940,7 +2161,10 @@ class _GuardResidentVehiclesTabState extends State<_GuardResidentVehiclesTab> {
                             onRefresh: () async => _loadVehicles(),
                             child: ListView(
                               children: [
-                                SizedBox(height: MediaQuery.of(context).size.height * 0.15),
+                                SizedBox(
+                                  height:
+                                      MediaQuery.of(context).size.height * 0.15,
+                                ),
                                 Center(
                                   child: Column(
                                     children: [
@@ -1971,24 +2195,39 @@ class _GuardResidentVehiclesTabState extends State<_GuardResidentVehiclesTab> {
                             child: ListView.separated(
                               padding: const EdgeInsets.all(12.0),
                               itemCount: filtered.length,
-                              separatorBuilder: (ctx, i) => const SizedBox(height: 10),
+                              separatorBuilder: (ctx, i) =>
+                                  const SizedBox(height: 10),
                               itemBuilder: (ctx, i) {
                                 final v = filtered[i];
                                 final is4W = (v['vehicle_type'] ?? '')
                                     .toString()
                                     .contains('4');
-                                final plateStr = (v['vehicle_number'] ?? 'MH01AB0000').toString().toUpperCase();
-                                final residentName = v['resident_name'] ?? 'Society Resident';
-                                final slot = (v['parking_slot'] ?? '').toString().trim();
-                                final flat = (v['flat_number'] ?? '').toString().trim();
-                                final block = (v['block_name'] ?? 'Block A').toString().trim();
-                                final phone = (v['resident_phone'] ?? '').toString().trim();
+                                final plateStr =
+                                    (v['vehicle_number'] ?? 'MH01AB0000')
+                                        .toString()
+                                        .toUpperCase();
+                                final residentName =
+                                    v['resident_name'] ?? 'Society Resident';
+                                final slot = (v['parking_slot'] ?? '')
+                                    .toString()
+                                    .trim();
+                                final flat = (v['flat_number'] ?? '')
+                                    .toString()
+                                    .trim();
+                                final block = (v['block_name'] ?? 'Block A')
+                                    .toString()
+                                    .trim();
+                                final phone = (v['resident_phone'] ?? '')
+                                    .toString()
+                                    .trim();
 
                                 return Card(
                                   elevation: 0,
                                   color: Colors.white,
                                   shape: RoundedRectangleBorder(
-                                    side: BorderSide(color: Colors.grey.shade300),
+                                    side: BorderSide(
+                                      color: Colors.grey.shade300,
+                                    ),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: InkWell(
@@ -1997,23 +2236,27 @@ class _GuardResidentVehiclesTabState extends State<_GuardResidentVehiclesTab> {
                                     child: Padding(
                                       padding: const EdgeInsets.all(12.0),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           // Top Row: Indian License Plate Badge + Vehicle Type
                                           Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
                                             children: [
                                               _buildGuardIndPlate(plateStr),
                                               Container(
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 4,
-                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
                                                 decoration: BoxDecoration(
                                                   color: is4W
                                                       ? Colors.blue.shade50
                                                       : Colors.teal.shade50,
-                                                  borderRadius: BorderRadius.circular(6),
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
                                                   border: Border.all(
                                                     color: is4W
                                                         ? Colors.blue.shade200
@@ -2021,7 +2264,8 @@ class _GuardResidentVehiclesTabState extends State<_GuardResidentVehiclesTab> {
                                                   ),
                                                 ),
                                                 child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
                                                   children: [
                                                     Icon(
                                                       is4W
@@ -2030,17 +2274,26 @@ class _GuardResidentVehiclesTabState extends State<_GuardResidentVehiclesTab> {
                                                       size: 15,
                                                       color: is4W
                                                           ? Colors.blue.shade800
-                                                          : Colors.teal.shade800,
+                                                          : Colors
+                                                                .teal
+                                                                .shade800,
                                                     ),
                                                     const SizedBox(width: 4),
                                                     Text(
-                                                      is4W ? '4-Wheeler' : '2-Wheeler',
+                                                      is4W
+                                                          ? '4-Wheeler'
+                                                          : '2-Wheeler',
                                                       style: TextStyle(
                                                         fontSize: 11,
-                                                        fontWeight: FontWeight.bold,
+                                                        fontWeight:
+                                                            FontWeight.bold,
                                                         color: is4W
-                                                            ? Colors.blue.shade900
-                                                            : Colors.teal.shade900,
+                                                            ? Colors
+                                                                  .blue
+                                                                  .shade900
+                                                            : Colors
+                                                                  .teal
+                                                                  .shade900,
                                                       ),
                                                     ),
                                                   ],
@@ -2055,7 +2308,8 @@ class _GuardResidentVehiclesTabState extends State<_GuardResidentVehiclesTab> {
                                             children: [
                                               CircleAvatar(
                                                 radius: 16,
-                                                backgroundColor: Colors.blue.shade50,
+                                                backgroundColor:
+                                                    Colors.blue.shade50,
                                                 child: Icon(
                                                   Icons.person,
                                                   size: 18,
@@ -2065,12 +2319,14 @@ class _GuardResidentVehiclesTabState extends State<_GuardResidentVehiclesTab> {
                                               const SizedBox(width: 10),
                                               Expanded(
                                                 child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
                                                       residentName,
                                                       style: const TextStyle(
-                                                        fontWeight: FontWeight.bold,
+                                                        fontWeight:
+                                                            FontWeight.bold,
                                                         fontSize: 14,
                                                         color: Colors.black87,
                                                       ),
@@ -2078,7 +2334,9 @@ class _GuardResidentVehiclesTabState extends State<_GuardResidentVehiclesTab> {
                                                     Text(
                                                       'Flat $flat • $block${phone.isNotEmpty ? " • 📞 $phone" : ""}',
                                                       style: TextStyle(
-                                                        color: Colors.grey.shade600,
+                                                        color: Colors
+                                                            .grey
+                                                            .shade600,
                                                         fontSize: 12,
                                                       ),
                                                     ),
@@ -2091,25 +2349,33 @@ class _GuardResidentVehiclesTabState extends State<_GuardResidentVehiclesTab> {
 
                                           // Slot Allotment & Action Row
                                           Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
                                             children: [
                                               Container(
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 4,
-                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
                                                 decoration: BoxDecoration(
                                                   color: Colors.amber.shade50,
-                                                  borderRadius: BorderRadius.circular(6),
-                                                  border: Border.all(color: Colors.amber.shade300),
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                  border: Border.all(
+                                                    color:
+                                                        Colors.amber.shade300,
+                                                  ),
                                                 ),
                                                 child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
                                                   children: [
                                                     Icon(
                                                       Icons.local_parking,
                                                       size: 14,
-                                                      color: Colors.amber.shade900,
+                                                      color:
+                                                          Colors.amber.shade900,
                                                     ),
                                                     const SizedBox(width: 4),
                                                     Text(
@@ -2118,8 +2384,11 @@ class _GuardResidentVehiclesTabState extends State<_GuardResidentVehiclesTab> {
                                                           : 'Slot Allotted',
                                                       style: TextStyle(
                                                         fontSize: 11,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: Colors.amber.shade900,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Colors
+                                                            .amber
+                                                            .shade900,
                                                       ),
                                                     ),
                                                   ],
@@ -2131,8 +2400,10 @@ class _GuardResidentVehiclesTabState extends State<_GuardResidentVehiclesTab> {
                                                     'View Details',
                                                     style: TextStyle(
                                                       fontSize: 12,
-                                                      fontWeight: FontWeight.bold,
-                                                      color: Colors.blue.shade900,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color:
+                                                          Colors.blue.shade900,
                                                     ),
                                                   ),
                                                   const SizedBox(width: 2),
@@ -2212,7 +2483,8 @@ class _GuardVisitorDetailsSheet extends StatelessWidget {
     final exitStr = log['exit_time'] != null
         ? log['exit_time'].toString().substring(0, 16).replaceAll('T', ' ')
         : 'Still Inside Premises';
-    final socName = (log['society_name'] != null &&
+    final socName =
+        (log['society_name'] != null &&
             log['society_name'].toString().isNotEmpty)
         ? log['society_name'].toString()
         : 'Serene Heights';
@@ -2221,7 +2493,10 @@ class _GuardVisitorDetailsSheet extends StatelessWidget {
     final residentName = (log['resident_name'] ?? '').toString().trim();
     final residentPhone = (log['resident_phone'] ?? '').toString().trim();
     final visitorPhone = (log['visitor_phone'] ?? '').toString().trim();
-    final duration = _calculateGuardStayDuration(log['entry_time'], log['exit_time']);
+    final duration = _calculateGuardStayDuration(
+      log['entry_time'],
+      log['exit_time'],
+    );
 
     return Container(
       decoration: const BoxDecoration(
@@ -2308,20 +2583,28 @@ class _GuardVisitorDetailsSheet extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: hasExited ? Colors.grey.shade50 : Colors.green.shade50.withAlpha(128),
+                color: hasExited
+                    ? Colors.grey.shade50
+                    : Colors.green.shade50.withAlpha(128),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: hasExited ? Colors.grey.shade200 : Colors.green.shade200,
+                  color: hasExited
+                      ? Colors.grey.shade200
+                      : Colors.green.shade200,
                 ),
               ),
               child: Row(
                 children: [
                   CircleAvatar(
                     radius: 22,
-                    backgroundColor: hasExited ? Colors.grey.shade200 : Colors.green.shade100,
+                    backgroundColor: hasExited
+                        ? Colors.grey.shade200
+                        : Colors.green.shade100,
                     child: Icon(
                       Icons.person,
-                      color: hasExited ? Colors.grey.shade700 : Colors.green.shade800,
+                      color: hasExited
+                          ? Colors.grey.shade700
+                          : Colors.green.shade800,
                       size: 26,
                     ),
                   ),
@@ -2342,7 +2625,9 @@ class _GuardVisitorDetailsSheet extends StatelessWidget {
                         Row(
                           children: [
                             Text(
-                              visitorPhone.isNotEmpty ? visitorPhone : 'No contact provided',
+                              visitorPhone.isNotEmpty
+                                  ? visitorPhone
+                                  : 'No contact provided',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Colors.grey.shade700,
@@ -2352,24 +2637,36 @@ class _GuardVisitorDetailsSheet extends StatelessWidget {
                               const SizedBox(width: 8),
                               InkWell(
                                 onTap: () {
-                                  Clipboard.setData(ClipboardData(text: visitorPhone));
+                                  Clipboard.setData(
+                                    ClipboardData(text: visitorPhone),
+                                  );
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text('Visitor phone copied to clipboard'),
+                                      content: Text(
+                                        'Visitor phone copied to clipboard',
+                                      ),
                                       duration: Duration(seconds: 1),
                                     ),
                                   );
                                 },
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(color: Colors.grey.shade300),
+                                    border: Border.all(
+                                      color: Colors.grey.shade300,
+                                    ),
                                   ),
                                   child: const Text(
                                     'Copy',
-                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -2380,9 +2677,14 @@ class _GuardVisitorDetailsSheet extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: hasExited ? Colors.grey.shade200 : Colors.green.shade100,
+                      color: hasExited
+                          ? Colors.grey.shade200
+                          : Colors.green.shade100,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -2390,7 +2692,9 @@ class _GuardVisitorDetailsSheet extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: hasExited ? Colors.grey.shade800 : Colors.green.shade900,
+                        color: hasExited
+                            ? Colors.grey.shade800
+                            : Colors.green.shade900,
                       ),
                     ),
                   ),
@@ -2421,18 +2725,27 @@ class _GuardVisitorDetailsSheet extends StatelessWidget {
                   _buildGuardDetailRow(
                     icon: Icons.person_outline,
                     label: 'Host Resident',
-                    value: residentName.isNotEmpty ? residentName : 'Occupant of Flat',
+                    value: residentName.isNotEmpty
+                        ? residentName
+                        : 'Occupant of Flat',
                     isBold: true,
                   ),
                   if (residentPhone.isNotEmpty) ...[
                     const Divider(height: 14),
                     Row(
                       children: [
-                        Icon(Icons.phone_outlined, size: 16, color: Colors.blue.shade800),
+                        Icon(
+                          Icons.phone_outlined,
+                          size: 16,
+                          color: Colors.blue.shade800,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'Host Contact: ',
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade700,
+                          ),
                         ),
                         Text(
                           residentPhone,
@@ -2445,16 +2758,23 @@ class _GuardVisitorDetailsSheet extends StatelessWidget {
                         const Spacer(),
                         InkWell(
                           onTap: () {
-                            Clipboard.setData(ClipboardData(text: residentPhone));
+                            Clipboard.setData(
+                              ClipboardData(text: residentPhone),
+                            );
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Resident phone copied to clipboard'),
+                                content: Text(
+                                  'Resident phone copied to clipboard',
+                                ),
                                 duration: Duration(seconds: 1),
                               ),
                             );
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(4),
@@ -2506,7 +2826,9 @@ class _GuardVisitorDetailsSheet extends StatelessWidget {
                     icon: Icons.logout,
                     label: 'Exit Timestamp',
                     value: exitStr,
-                    valueColor: hasExited ? Colors.black87 : Colors.green.shade800,
+                    valueColor: hasExited
+                        ? Colors.black87
+                        : Colors.green.shade800,
                   ),
                   const Divider(height: 14),
                   _buildGuardDetailRow(
@@ -2542,7 +2864,9 @@ class _GuardVisitorDetailsSheet extends StatelessWidget {
                   backgroundColor: Colors.blue.shade800,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
           ],
@@ -2563,13 +2887,16 @@ class _GuardVehicleDetailsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final is4W = (vehicle['vehicle_type'] ?? '').toString().contains('4');
-    final plateStr = (vehicle['vehicle_number'] ?? 'MH01AB0000').toString().toUpperCase();
+    final plateStr = (vehicle['vehicle_number'] ?? 'MH01AB0000')
+        .toString()
+        .toUpperCase();
     final residentName = vehicle['resident_name'] ?? 'Society Resident';
     final slot = (vehicle['parking_slot'] ?? '').toString().trim();
     final flat = (vehicle['flat_number'] ?? '').toString().trim();
     final block = (vehicle['block_name'] ?? 'Block A').toString().trim();
     final phone = (vehicle['resident_phone'] ?? '').toString().trim();
-    final socName = (vehicle['society_name'] != null &&
+    final socName =
+        (vehicle['society_name'] != null &&
             vehicle['society_name'].toString().isNotEmpty)
         ? vehicle['society_name'].toString()
         : 'Serene Heights';
@@ -2616,7 +2943,9 @@ class _GuardVehicleDetailsSheet extends StatelessWidget {
                       ),
                       child: Icon(
                         is4W ? Icons.directions_car : Icons.two_wheeler,
-                        color: is4W ? Colors.blue.shade800 : Colors.teal.shade800,
+                        color: is4W
+                            ? Colors.blue.shade800
+                            : Colors.teal.shade800,
                         size: 22,
                       ),
                     ),
@@ -2670,7 +2999,10 @@ class _GuardVehicleDetailsSheet extends StatelessWidget {
                   );
                 },
                 icon: const Icon(Icons.copy, size: 14),
-                label: const Text('Copy License Plate Number', style: TextStyle(fontSize: 12)),
+                label: const Text(
+                  'Copy License Plate Number',
+                  style: TextStyle(fontSize: 12),
+                ),
               ),
             ),
             const SizedBox(height: 6),
@@ -2685,7 +3017,11 @@ class _GuardVehicleDetailsSheet extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.verified_user, color: Colors.green.shade800, size: 20),
+                  Icon(
+                    Icons.verified_user,
+                    color: Colors.green.shade800,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -2716,14 +3052,18 @@ class _GuardVehicleDetailsSheet extends StatelessWidget {
                   _buildGuardDetailRow(
                     icon: is4W ? Icons.directions_car : Icons.two_wheeler,
                     label: 'Vehicle Category',
-                    value: is4W ? '4-Wheeler (Car / SUV)' : '2-Wheeler (Motorcycle / Scooter)',
+                    value: is4W
+                        ? '4-Wheeler (Car / SUV)'
+                        : '2-Wheeler (Motorcycle / Scooter)',
                     isBold: true,
                   ),
                   const Divider(height: 14),
                   _buildGuardDetailRow(
                     icon: Icons.local_parking,
                     label: 'Designated Parking Slot',
-                    value: slot.isNotEmpty ? 'Bay / Slot #$slot' : 'Allotted Bay',
+                    value: slot.isNotEmpty
+                        ? 'Bay / Slot #$slot'
+                        : 'Allotted Bay',
                     valueColor: Colors.amber.shade900,
                     isBold: true,
                   ),
@@ -2768,11 +3108,18 @@ class _GuardVehicleDetailsSheet extends StatelessWidget {
                     const Divider(height: 14),
                     Row(
                       children: [
-                        Icon(Icons.phone_outlined, size: 16, color: Colors.blue.shade800),
+                        Icon(
+                          Icons.phone_outlined,
+                          size: 16,
+                          color: Colors.blue.shade800,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'Owner Phone: ',
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade700,
+                          ),
                         ),
                         Text(
                           phone,
@@ -2788,13 +3135,18 @@ class _GuardVehicleDetailsSheet extends StatelessWidget {
                             Clipboard.setData(ClipboardData(text: phone));
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Resident phone copied to clipboard'),
+                                content: Text(
+                                  'Resident phone copied to clipboard',
+                                ),
                                 duration: Duration(seconds: 1),
                               ),
                             );
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(4),
@@ -2874,7 +3226,11 @@ Widget _buildGuardDetailRow({
   );
 }
 
-Widget _buildGuardIndPlate(String plateNumber, {double fontSize = 15, bool isLarge = false}) {
+Widget _buildGuardIndPlate(
+  String plateNumber, {
+  double fontSize = 15,
+  bool isLarge = false,
+}) {
   final cleanPlate = plateNumber.replaceAll(' ', '').toUpperCase();
   String displayPlate = cleanPlate;
   if (cleanPlate.length >= 8) {
@@ -2943,7 +3299,9 @@ String _calculateGuardStayDuration(dynamic entryRaw, dynamic exitRaw) {
   if (entryRaw == null) return '--';
   final entry = DateTime.tryParse(entryRaw.toString());
   if (entry == null) return '--';
-  final exit = exitRaw != null ? DateTime.tryParse(exitRaw.toString()) : DateTime.now();
+  final exit = exitRaw != null
+      ? DateTime.tryParse(exitRaw.toString())
+      : DateTime.now();
   if (exit == null) return '--';
 
   final diff = exit.difference(entry);
@@ -2958,4 +3316,3 @@ String _calculateGuardStayDuration(dynamic entryRaw, dynamic exitRaw) {
     return '$hours hr $minutes mins${exitRaw == null ? " (active)" : ""}';
   }
 }
-

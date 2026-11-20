@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/datasource/api_service.dart';
+import '../../utils/branding.dart';
 
 class ChairmanHomeScreen extends StatefulWidget {
   const ChairmanHomeScreen({super.key});
@@ -50,7 +51,7 @@ class _ChairmanHomeScreenState extends State<ChairmanHomeScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text('Chairman Dashboard'),
+        title: const ZenithBrandTitle(title: 'Chairman Dashboard'),
         elevation: 0,
         automaticallyImplyLeading: false, // Prevents phantom back button
         actions: [

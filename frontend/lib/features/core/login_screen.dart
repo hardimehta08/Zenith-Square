@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../data/datasource/api_service.dart';
+import '../../utils/branding.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -37,9 +38,9 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (mounted) {
-        if (response == null || response['success'] == false) {
+        if (response['success'] == false) {
           final errorMessage =
-              response?['error'] ?? 'Login failed. Please try again.';
+              response['error'] ?? 'Login failed. Please try again.';
           _showError(errorMessage);
           return;
         }
@@ -108,11 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(
-                    Icons.apartment_rounded,
-                    size: 64,
-                    color: Colors.blueAccent,
-                  ),
+                  const ZenithLogo(size: 88),
                   const SizedBox(height: 16),
                   const Text(
                     'Welcome Back',
@@ -219,8 +216,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 16),
 
                   // Register Redirection
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 4,
                     children: [
                       Text(
                         "Don't have an account?",

@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import './api_service.dart';
 
 class SecurityApiService {
-  static const String baseUrl = 'http://127.0.0.1:8000/api/security';
+  static const String baseUrl = '${ApiService.baseUrl}/security';
 
   // 1. Broadcast SOS Alert (POST /security/trigger-emergency/)
   static Future<Map<String, dynamic>> triggerEmergencyAlert({
@@ -197,7 +197,7 @@ class SecurityApiService {
   static Future<List<dynamic>> fetchSocietyVehicles() async {
     final token = await ApiService.getAccessToken();
     final res = await http.get(
-      Uri.parse('http://127.0.0.1:8000/api/facilities/vehicles/?all=true'),
+      Uri.parse('${ApiService.baseUrl}/facilities/vehicles/?all=true'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',

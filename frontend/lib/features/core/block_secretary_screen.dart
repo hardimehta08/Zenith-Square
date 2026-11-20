@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/datasource/api_service.dart';
+import '../../utils/branding.dart';
 
 class BlockSecretaryHomeScreen extends StatefulWidget {
   const BlockSecretaryHomeScreen({super.key});
@@ -30,7 +31,7 @@ class _BlockSecretaryHomeScreenState extends State<BlockSecretaryHomeScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text('Block Secretary Panel'),
+        title: const ZenithBrandTitle(title: 'Block Secretary Panel'),
         elevation: 0,
         automaticallyImplyLeading: false,
         actions: [

@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import './api_service.dart';
 
 class CommunityApiService {
-  static const String baseUrl = 'http://127.0.0.1:8000/api/community';
+  static const String baseUrl = '${ApiService.baseUrl}/community';
 
   // 1. Fetch Society Meetings (GET /meetings/)
   static Future<List<dynamic>> fetchMeetings() async {

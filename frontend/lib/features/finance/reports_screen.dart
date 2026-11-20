@@ -4,6 +4,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../../data/datasource/finance_api_service.dart';
 import '../../../utils/file_download_helper.dart';
+import '../../../utils/branding.dart';
 
 class SocietyReportsScreen extends StatefulWidget {
   const SocietyReportsScreen({super.key});
@@ -351,11 +352,12 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
       final fileName =
           'SOCIETY_OPERATIONS_AUDIT_${societyName.replaceAll(' ', '_')}_${DateTime.now().year}.pdf';
 
-      downloadWebBinaryFile(
+      final exported = await downloadWebBinaryFile(
         fileName: fileName,
         bytes: pdfBytes,
         mimeType: 'application/pdf',
       );
+      if (!exported) return;
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -364,11 +366,7 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
               children: [
                 const Icon(Icons.check_circle, color: Colors.white, size: 20),
                 const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Downloaded Official Society Operations Audit: $fileName',
-                  ),
-                ),
+                Expanded(child: Text('PDF saved: $fileName')),
               ],
             ),
             backgroundColor: Colors.blue.shade900,
@@ -380,7 +378,7 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to generate PDF: ${e.toString()}'),
+            content: Text('Failed to export PDF: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -541,7 +539,7 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
   // ===========================================================================
   @override
   Widget build(BuildContext context) {
-    const blueColor = Colors.blueAccent;
+    const blueColor = ZenithBrand.teal;
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
@@ -1070,21 +1068,25 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
                   ),
                   child: Icon(icon, color: Colors.blueAccent, size: 18),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    badgeText,
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.bold,
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      badgeText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -1135,15 +1137,22 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
         Expanded(
           child: Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 12, color: Colors.black87),
           ),
         ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: valueColor,
+        Flexible(
+          child: Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: valueColor,
+            ),
           ),
         ),
       ],
@@ -1270,45 +1279,32 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
           // Demographics Row
           _buildSectionTitle('Resident Demographics & Distribution'),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _statMiniCard(
-                  'Owner Flats',
-                  '$owners',
-                  Icons.home,
-                  Colors.blueAccent,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _statMiniCard(
-                  'Tenant Flats',
-                  '$tenants',
-                  Icons.key,
-                  Colors.blueAccent,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _statMiniCard(
-                  'Residents',
-                  '$totalResidents',
-                  Icons.people,
-                  Colors.blueAccent,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _statMiniCard(
-                  'Nominees',
-                  '$nominees',
-                  Icons.family_restroom,
-                  Colors.blueAccent,
-                ),
-              ),
-            ],
-          ),
+          _buildResponsiveStatCards([
+            _statMiniCard(
+              'Owner Flats',
+              '$owners',
+              Icons.home,
+              Colors.blueAccent,
+            ),
+            _statMiniCard(
+              'Tenant Flats',
+              '$tenants',
+              Icons.key,
+              Colors.blueAccent,
+            ),
+            _statMiniCard(
+              'Residents',
+              '$totalResidents',
+              Icons.people,
+              Colors.blueAccent,
+            ),
+            _statMiniCard(
+              'Nominees',
+              '$nominees',
+              Icons.family_restroom,
+              Colors.blueAccent,
+            ),
+          ]),
           const SizedBox(height: 24),
 
           // Block-by-Block Occupancy Table
@@ -1349,6 +1345,8 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
                   ),
                   title: Text(
                     'Block ${b['block_name']} (${b['block_id']})',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
@@ -1360,6 +1358,8 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
                       const SizedBox(height: 4),
                       Text(
                         '$bOcc Occupied • $bVac Vacant • $bTotal Total Units',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey.shade600,
@@ -1379,12 +1379,18 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
                       ),
                     ],
                   ),
-                  trailing: Text(
-                    '$bRate%',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.teal.shade900,
+                  trailing: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 64),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        '$bRate%',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.teal.shade900,
+                        ),
+                      ),
                     ),
                   ),
                 );
@@ -1639,6 +1645,8 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
                   return ListTile(
                     title: Text(
                       c['title'] ?? 'Complaint',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
@@ -1646,26 +1654,33 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
                     ),
                     subtitle: Text(
                       'By ${c['resident'] ?? 'Resident'} • ${c['created_at'] ?? ''}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.grey.shade600,
                       ),
                     ),
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: badgeBg,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        statusStr.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: badgeColor,
+                    trailing: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 80),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: badgeBg,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          statusStr.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: badgeColor,
+                          ),
                         ),
                       ),
                     ),
@@ -1711,14 +1726,9 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Visitor Gate Logs & Security Traffic',
-                      style: TextStyle(color: Colors.white70, fontSize: 13),
-                    ),
-                    Container(
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final insideBadge = Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
                         vertical: 4,
@@ -1746,8 +1756,31 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                    );
+                    final title = const Text(
+                      'Visitor Gate Logs & Security Traffic',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Colors.white70, fontSize: 13),
+                    );
+                    if (constraints.maxWidth < 400) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          title,
+                          const SizedBox(height: 8),
+                          insideBadge,
+                        ],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        Expanded(child: title),
+                        const SizedBox(width: 8),
+                        insideBadge,
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -1818,22 +1851,32 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    p['purpose'] ?? 'General',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
+                                  Expanded(
+                                    child: Text(
+                                      p['purpose'] ?? 'General',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
                                     ),
                                   ),
-                                  Text(
-                                    '$count (${(pct * 100).toStringAsFixed(0)}%)',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.blueGrey.shade800,
-                                      fontWeight: FontWeight.bold,
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Align(
+                                      alignment: Alignment.centerRight,
+                                      child: Text(
+                                        '$count (${(pct * 100).toStringAsFixed(0)}%)',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.blueGrey.shade800,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -1891,6 +1934,8 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
                   ),
                   title: Text(
                     a['type'] ?? 'Emergency',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
@@ -1898,13 +1943,21 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
                   ),
                   subtitle: const Text(
                     'Recorded security alert incident',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 11),
                   ),
-                  trailing: Text(
-                    '${a['count']} incidents',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                  trailing: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 72),
+                    child: Text(
+                      '${a['count']} incidents',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 );
@@ -1957,14 +2010,9 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Amenities & Community Facilities',
-                      style: TextStyle(color: Colors.white70, fontSize: 13),
-                    ),
-                    Container(
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final availabilityBadge = Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
                         vertical: 4,
@@ -1981,8 +2029,31 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                  ],
+                    );
+                    final title = const Text(
+                      'Amenities & Community Facilities',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Colors.white70, fontSize: 13),
+                    );
+                    if (constraints.maxWidth < 400) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          title,
+                          const SizedBox(height: 8),
+                          availabilityBadge,
+                        ],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        Expanded(child: title),
+                        const SizedBox(width: 8),
+                        availabilityBadge,
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -2070,6 +2141,8 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
                   ),
                   title: Text(
                     a['name'] ?? 'Amenity',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
@@ -2077,27 +2150,34 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
                   ),
                   subtitle: Text(
                     'Location: ${a['location'] ?? 'Clubhouse'} • Max Capacity: ${a['capacity'] ?? 'N/A'}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                   ),
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isAvailable
-                          ? Colors.green.shade50
-                          : Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      isAvailable ? 'OPERATIONAL' : 'MAINTENANCE',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+                  trailing: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 88),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
                         color: isAvailable
-                            ? Colors.green.shade800
-                            : Colors.red.shade800,
+                            ? Colors.green.shade50
+                            : Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        isAvailable ? 'OPERATIONAL' : 'MAINTENANCE',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: isAvailable
+                              ? Colors.green.shade800
+                              : Colors.red.shade800,
+                        ),
                       ),
                     ),
                   ),
@@ -2124,45 +2204,32 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _statMiniCard(
-                          'Total Vehicles',
-                          '$vehTotal',
-                          Icons.directions_car,
-                          Colors.blueAccent,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _statMiniCard(
-                          '4-Wheelers (Cars)',
-                          '$veh4w',
-                          Icons.directions_car_filled,
-                          Colors.blueAccent,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _statMiniCard(
-                          '2-Wheelers (Bikes)',
-                          '$veh2w',
-                          Icons.two_wheeler,
-                          Colors.blueAccent,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _statMiniCard(
-                          'Allocated Slots',
-                          '$vehSlots',
-                          Icons.local_parking,
-                          Colors.blueAccent,
-                        ),
-                      ),
-                    ],
-                  ),
+                  _buildResponsiveStatCards([
+                    _statMiniCard(
+                      'Total Vehicles',
+                      '$vehTotal',
+                      Icons.directions_car,
+                      Colors.blueAccent,
+                    ),
+                    _statMiniCard(
+                      '4-Wheelers (Cars)',
+                      '$veh4w',
+                      Icons.directions_car_filled,
+                      Colors.blueAccent,
+                    ),
+                    _statMiniCard(
+                      '2-Wheelers (Bikes)',
+                      '$veh2w',
+                      Icons.two_wheeler,
+                      Colors.blueAccent,
+                    ),
+                    _statMiniCard(
+                      'Allocated Slots',
+                      '$vehSlots',
+                      Icons.local_parking,
+                      Colors.blueAccent,
+                    ),
+                  ]),
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -2244,12 +2311,16 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
         children: [
           Icon(icon, color: Colors.blueAccent, size: 16),
           const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: color,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
           ),
           const SizedBox(height: 2),
@@ -2261,6 +2332,24 @@ class _SocietyReportsScreenState extends State<SocietyReportsScreen>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildResponsiveStatCards(List<Widget> cards) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 8.0;
+        final columns = constraints.maxWidth < 520 ? 2 : cards.length;
+        final cardWidth =
+            (constraints.maxWidth - spacing * (columns - 1)) / columns;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (final card in cards) SizedBox(width: cardWidth, child: card),
+          ],
+        );
+      },
     );
   }
 

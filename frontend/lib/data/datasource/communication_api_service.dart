@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import './api_service.dart';
 
 class CommunicationApiService {
-  static const String baseUrl = 'http://127.0.0.1:8000/api/communication';
+  static const String baseUrl = '${ApiService.baseUrl}/communication';
 
   // Fetch Notices (GET /api/notices/)
   static Future<List<dynamic>> fetchNotices() async {

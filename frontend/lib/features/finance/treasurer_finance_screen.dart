@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../data/datasource/finance_api_service.dart';
+import '../../utils/branding.dart';
 import 'widgets/financial_document_helper.dart';
 
 class TreasurerFinanceScreen extends StatefulWidget {
@@ -44,7 +45,9 @@ class _TreasurerFinanceScreenState extends State<TreasurerFinanceScreen>
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          indicatorColor: Colors.blueAccent,
+          labelColor: Colors.white,
+          unselectedLabelColor: const Color(0xCCFFFFFF),
+          indicatorColor: ZenithBrand.coral,
           tabs: const [
             Tab(icon: Icon(Icons.dashboard_outlined), text: 'Ledger Summary'),
             Tab(

@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import './api_service.dart';
 
 class FinanceApiService {
-  static const String baseUrl = 'http://127.0.0.1:8000/api/finance';
+  static const String baseUrl = '${ApiService.baseUrl}/finance';
 
   static Future<Map<String, dynamic>> fetchLatestBill() async {
     final token = await ApiService.getAccessToken();

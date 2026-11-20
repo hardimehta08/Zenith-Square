@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/datasource/api_service.dart';
 import 'reset_password.dart';
+import '../../utils/branding.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -59,7 +60,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Forgot Password')),
+      appBar: AppBar(
+        title: const ZenithBrandTitle(
+          title: 'Forgot Password',
+          logoSize: 32,
+        ),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -69,11 +75,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 16),
-                const Icon(
-                  Icons.lock_reset,
-                  size: 64,
-                  color: Colors.blueAccent,
-                ),
+                const ZenithLogo(size: 72),
                 const SizedBox(height: 16),
                 const Text(
                   'Reset Your Password',

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../data/datasource/api_service.dart';
 import './verify_otp_screen.dart';
+import '../../utils/branding.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -181,7 +182,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final phoneRegex = RegExp(r'^\d{10}$');
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Resident Registration')),
+      appBar: AppBar(
+        title: const ZenithBrandTitle(
+          title: 'Resident Registration',
+          logoSize: 32,
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
@@ -409,8 +415,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     if (_areAllFieldsFilled()) {
                       if (!_isSubmitting) _handleRegister();
                     } else {
-                      FocusScope.of(context)
-                          .requestFocus(_confirmPasswordFocusNode);
+                      FocusScope.of(
+                        context,
+                      ).requestFocus(_confirmPasswordFocusNode);
                     }
                   },
                   validator: (v) {
@@ -482,8 +489,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 4,
                   children: [
                     Text(
                       "Already have an account?",
